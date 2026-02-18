@@ -126,11 +126,43 @@ type TimeSeriesDataResponseBody struct {
 	Change           *float64 `form:"change,omitempty" json:"change,omitempty" xml:"change,omitempty"`
 	ChangePercentage *float64 `form:"change_percentage,omitempty" json:"change_percentage,omitempty" xml:"change_percentage,omitempty"`
 	Trend            string   `form:"trend" json:"trend" xml:"trend"`
+	// Last N period labels and values (newest last)
+	Periods []*PeriodPointDataResponseBody `form:"periods,omitempty" json:"periods,omitempty" xml:"periods,omitempty"`
+	// Simple moving average for latest period (e.g. 3-period SMA)
+	MovingAverage *float64 `form:"moving_average,omitempty" json:"moving_average,omitempty" xml:"moving_average,omitempty"`
+	// Periods flagged as statistical anomalies (e.g. z-score)
+	Anomalies []*AnomalyPointDataResponseBody `form:"anomalies,omitempty" json:"anomalies,omitempty" xml:"anomalies,omitempty"`
+	// Trend over multiple periods (direction, slope, summary)
+	TrendSummary *TrendSummaryDataResponseBody `form:"trend_summary,omitempty" json:"trend_summary,omitempty" xml:"trend_summary,omitempty"`
+}
+
+// PeriodPointDataResponseBody is used to define fields on response body types.
+type PeriodPointDataResponseBody struct {
+	Label string  `form:"label" json:"label" xml:"label"`
+	Value float64 `form:"value" json:"value" xml:"value"`
+}
+
+// AnomalyPointDataResponseBody is used to define fields on response body types.
+type AnomalyPointDataResponseBody struct {
+	PeriodLabel string  `form:"period_label" json:"period_label" xml:"period_label"`
+	Value       float64 `form:"value" json:"value" xml:"value"`
+	Reason      string  `form:"reason" json:"reason" xml:"reason"`
+}
+
+// TrendSummaryDataResponseBody is used to define fields on response body types.
+type TrendSummaryDataResponseBody struct {
+	// increasing, decreasing, or stable
+	Direction string `form:"direction" json:"direction" xml:"direction"`
+	// Change per period from linear regression
+	Slope       *float64 `form:"slope,omitempty" json:"slope,omitempty" xml:"slope,omitempty"`
+	PeriodsUsed *int32   `form:"periods_used,omitempty" json:"periods_used,omitempty" xml:"periods_used,omitempty"`
+	// Human-readable trend description
+	Summary string `form:"summary" json:"summary" xml:"summary"`
 }
 
 // ChartSuggestionResponseBody is used to define fields on response body types.
 type ChartSuggestionResponseBody struct {
-	// Chart type identifier: bar, line, pie, table
+	// Chart type identifier: bar, line, pie, area, table
 	ChartType string `form:"chart_type" json:"chart_type" xml:"chart_type"`
 	// Human-readable label
 	Label string `form:"label" json:"label" xml:"label"`

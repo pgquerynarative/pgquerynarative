@@ -3,6 +3,8 @@ package llm
 import (
 	"fmt"
 	"strings"
+
+	"github.com/pgquerynarrative/pgquerynarrative/app/metrics"
 )
 
 // BuildNarrativePrompt creates a prompt for narrative generation from query results
@@ -13,10 +15,11 @@ func BuildNarrativePrompt(sql string, columns []string, rows [][]interface{}, me
 	sb.WriteString("IMPORTANT RULES:\n")
 	sb.WriteString("1. Only make claims that are directly supported by the data provided\n")
 	sb.WriteString("2. Cite specific numbers and metrics in your narrative\n")
-	sb.WriteString("3. Do not make assumptions or inferences beyond what the data shows\n")
-	sb.WriteString("4. Acknowledge limitations if the dataset is small or incomplete\n")
-	sb.WriteString("5. Use clear, professional business language\n")
-	sb.WriteString("6. If the CALCULATED METRICS include a \"TimeSeries\" (or \"time_series\") object with period-over-period comparison, include at least one takeaway that mentions how key measures changed vs the previous period (e.g. \"Revenue was −0.2% vs the previous period\" or \"Transactions were up 3.1% compared to the prior period\").\n\n")
+	sb.WriteString("3. When citing numbers, preserve the exact magnitude: use comma as thousands separator (e.g. 84,816,006.54 for eighty-four million, not 848,160,065.4 or 848 million). Do not drop or add decimal places or digits.\n")
+	sb.WriteString("4. Do not make assumptions or inferences beyond what the data shows\n")
+	sb.WriteString("5. Acknowledge limitations if the dataset is small or incomplete\n")
+	sb.WriteString("6. Use clear, professional business language\n")
+	sb.WriteString("7. If the CALCULATED METRICS include a \"TimeSeries\" (or \"time_series\") object with period-over-period comparison, include at least one takeaway that mentions how key measures changed vs the previous period (e.g. \"Revenue was −0.2% vs the previous period\" or \"Transactions were up 3.1% compared to the prior period\").\n\n")
 
 	sb.WriteString("SQL QUERY:\n")
 	sb.WriteString(sql)
@@ -45,7 +48,7 @@ func BuildNarrativePrompt(sql string, columns []string, rows [][]interface{}, me
 		sb.WriteString(fmt.Sprintf("Row %d: ", i+1))
 		n := len(row)
 		for j := 0; j < n; j++ {
-			rowStr[j] = fmt.Sprintf("%v", row[j])
+			rowStr[j] = formatCellForPrompt(row[j])
 		}
 		sb.WriteString(strings.Join(rowStr[:n], " | "))
 		sb.WriteString("\n")
@@ -56,7 +59,7 @@ func BuildNarrativePrompt(sql string, columns []string, rows [][]interface{}, me
 	}
 
 	sb.WriteString("\n")
-	sb.WriteString("CALCULATED METRICS:\n")
+	sb.WriteString("CALCULATED METRICS (raw JSON; when citing numbers in your narrative, format with comma thousands separator and preserve exact magnitude, e.g. 84816006.54 -> 84,816,006.54):\n")
 	sb.WriteString(metricsJSON)
 	sb.WriteString("\n\n")
 
@@ -83,4 +86,38 @@ func BuildNarrativePrompt(sql string, columns []string, rows [][]interface{}, me
 	sb.WriteString("Return ONLY valid JSON. Do not include any markdown formatting, code blocks, or explanatory text outside the JSON.\n")
 
 	return sb.String()
+}
+
+// formatCellForPrompt formats a cell value for the LLM prompt so numbers use comma-separated thousands,
+// reducing the chance the model misreads scale (e.g. 84816006.54 -> "84,816,006.54").
+func formatCellForPrompt(val interface{}) string {
+	if val == nil {
+		return "NULL"
+	}
+	f, ok := metrics.GetNumericValue(val)
+	if ok {
+		return formatFloatWithCommas(f)
+	}
+	return fmt.Sprint(val)
+}
+
+// formatFloatWithCommas formats a float64 with thousands separators for prompt readability.
+func formatFloatWithCommas(v float64) string {
+	s := fmt.Sprintf("%.2f", v)
+	idx := strings.Index(s, ".")
+	if idx == -1 {
+		idx = len(s)
+	}
+	integerPart := s[:idx]
+	var b strings.Builder
+	for i, c := range integerPart {
+		if i > 0 && (len(integerPart)-i)%3 == 0 {
+			b.WriteString(",")
+		}
+		b.WriteRune(c)
+	}
+	if idx < len(s) {
+		b.WriteString(s[idx:])
+	}
+	return b.String()
 }

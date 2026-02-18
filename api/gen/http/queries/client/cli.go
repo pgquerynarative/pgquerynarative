@@ -25,7 +25,7 @@ func BuildRunPayload(queriesRunBody string) (*queries.RunQueryPayload, error) {
 	{
 		err = json.Unmarshal([]byte(queriesRunBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"limit\": 249,\n      \"sql\": \"w\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"limit\": 342,\n      \"sql\": \"25\"\n   }'")
 		}
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.sql", body.SQL, "^[^;]+$"))
 		if utf8.RuneCountInString(body.SQL) < 1 {
@@ -67,7 +67,7 @@ func BuildListSavedPayload(queriesListSavedTags string, queriesListSavedLimit st
 		if queriesListSavedTags != "" {
 			err = json.Unmarshal([]byte(queriesListSavedTags), &tags)
 			if err != nil {
-				return nil, fmt.Errorf("invalid JSON for tags, \nerror: %s, \nexample of valid JSON:\n%s", err, "'[\n      \"Assumenda accusamus doloribus.\",\n      \"Minima vitae animi.\",\n      \"Natus consequuntur non.\",\n      \"Recusandae saepe soluta nemo velit facilis iusto.\"\n   ]'")
+				return nil, fmt.Errorf("invalid JSON for tags, \nerror: %s, \nexample of valid JSON:\n%s", err, "'[\n      \"Accusamus doloribus nihil minima vitae animi dolorem.\",\n      \"Consequuntur non sint recusandae saepe soluta.\",\n      \"Velit facilis iusto.\"\n   ]'")
 			}
 		}
 	}

@@ -16,4 +16,6 @@
 
 **Period comparison ("Vs previous period") not shown:** Query must include a date/time column and at least one numeric measure, with at least two result rows. See [Period comparison](features/period-comparison.md).
 
+**Narrative shows wrong number scale (e.g. 848M instead of 84.8M):** Fixed in prompt: sample data and instructions now enforce comma-separated thousands and correct magnitude. Use latest version.
+
 **See also:** [Configuration](configuration.md), [Installation](getting-started/installation.md)

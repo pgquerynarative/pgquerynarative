@@ -44,7 +44,7 @@ var PeriodComparisonItem = Type("PeriodComparisonItem", func() {
 
 // ChartSuggestion describes a chart type suggested from the query result shape.
 var ChartSuggestion = Type("ChartSuggestion", func() {
-	Attribute("chart_type", String, "Chart type identifier: bar, line, pie, table")
+	Attribute("chart_type", String, "Chart type identifier: bar, line, pie, area, table")
 	Attribute("label", String, "Human-readable label")
 	Attribute("reason", String, "Why this chart fits the data")
 	Required("chart_type", "label", "reason")

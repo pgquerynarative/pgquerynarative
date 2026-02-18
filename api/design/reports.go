@@ -135,7 +135,32 @@ var TimeSeriesData = Type("TimeSeriesData", func() {
 	Attribute("change", Float64)
 	Attribute("change_percentage", Float64)
 	Attribute("trend", String)
+	Attribute("periods", ArrayOf(PeriodPointData), "Last N period labels and values (newest last)")
+	Attribute("moving_average", Float64, "Simple moving average for latest period (e.g. 3-period SMA)")
+	Attribute("anomalies", ArrayOf(AnomalyPointData), "Periods flagged as statistical anomalies (e.g. z-score)")
+	Attribute("trend_summary", TrendSummaryData, "Trend over multiple periods (direction, slope, summary)")
 	Required("current_period", "trend")
+})
+
+var PeriodPointData = Type("PeriodPointData", func() {
+	Attribute("label", String)
+	Attribute("value", Float64)
+	Required("label", "value")
+})
+
+var AnomalyPointData = Type("AnomalyPointData", func() {
+	Attribute("period_label", String)
+	Attribute("value", Float64)
+	Attribute("reason", String)
+	Required("period_label", "value", "reason")
+})
+
+var TrendSummaryData = Type("TrendSummaryData", func() {
+	Attribute("direction", String, "increasing, decreasing, or stable")
+	Attribute("slope", Float64, "Change per period from linear regression")
+	Attribute("periods_used", Int32)
+	Attribute("summary", String, "Human-readable trend description")
+	Required("direction", "summary")
 })
 
 var ReportList = Type("ReportList", func() {

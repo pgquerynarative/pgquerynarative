@@ -45,8 +45,14 @@ type AggregateData struct {
 	Count *int32
 }
 
+type AnomalyPointData struct {
+	PeriodLabel string
+	Value       float64
+	Reason      string
+}
+
 type ChartSuggestion struct {
-	// Chart type identifier: bar, line, pie, table
+	// Chart type identifier: bar, line, pie, area, table
 	ChartType string
 	// Human-readable label
 	Label string
@@ -103,6 +109,11 @@ type NotFoundError struct {
 	Code    *string
 }
 
+type PeriodPointData struct {
+	Label string
+	Value float64
+}
+
 // Report is the result type of the reports service generate method.
 type Report struct {
 	ID           string
@@ -130,12 +141,30 @@ type TimeSeriesData struct {
 	Change           *float64
 	ChangePercentage *float64
 	Trend            string
+	// Last N period labels and values (newest last)
+	Periods []*PeriodPointData
+	// Simple moving average for latest period (e.g. 3-period SMA)
+	MovingAverage *float64
+	// Periods flagged as statistical anomalies (e.g. z-score)
+	Anomalies []*AnomalyPointData
+	// Trend over multiple periods (direction, slope, summary)
+	TrendSummary *TrendSummaryData
 }
 
 type TopCategoryData struct {
 	Category   string
 	Value      float64
 	Percentage float64
+}
+
+type TrendSummaryData struct {
+	// increasing, decreasing, or stable
+	Direction string
+	// Change per period from linear regression
+	Slope       *float64
+	PeriodsUsed *int32
+	// Human-readable trend description
+	Summary string
 }
 
 type ValidationError struct {

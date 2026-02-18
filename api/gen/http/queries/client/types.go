@@ -113,7 +113,7 @@ type ColumnInfoResponseBody struct {
 
 // ChartSuggestionResponseBody is used to define fields on response body types.
 type ChartSuggestionResponseBody struct {
-	// Chart type identifier: bar, line, pie, table
+	// Chart type identifier: bar, line, pie, area, table
 	ChartType *string `form:"chart_type,omitempty" json:"chart_type,omitempty" xml:"chart_type,omitempty"`
 	// Human-readable label
 	Label *string `form:"label,omitempty" json:"label,omitempty" xml:"label,omitempty"`

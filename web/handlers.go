@@ -373,9 +373,12 @@ func FormatQueryResultsHTML(result *queries.RunQueryResult) string {
 	chartData := chartDataFromResult(result)
 	if chartData != nil {
 		jsonBytes, _ := json.Marshal(chartData)
+		chartSelectOptions := buildChartSelectOptions(result.ChartSuggestions)
 		sb.WriteString("<div class='chart-area' data-chart-data='")
 		sb.WriteString(template.HTMLEscapeString(string(jsonBytes)))
-		sb.WriteString("'><div class='chart-toolbar'><span class='chart-label'>Chart:</span> <select id='chart-type-select' class='chart-select'><option value=''>—</option><option value='bar'>Bar</option><option value='line'>Line</option><option value='pie'>Pie</option></select></div><div class='chart-canvas-wrap'><canvas id='result-chart' width='400' height='250'></canvas></div></div>")
+		sb.WriteString("'><div class='chart-toolbar'><span class='chart-label'>Chart:</span> <select id='chart-type-select' class='chart-select'><option value=''>—</option>")
+		sb.WriteString(chartSelectOptions)
+		sb.WriteString("</select></div><div class='chart-canvas-wrap'><canvas id='result-chart' width='400' height='250'></canvas></div></div>")
 	}
 
 	if rows == 0 {
@@ -409,6 +412,45 @@ func FormatQueryResultsHTML(result *queries.RunQueryResult) string {
 	sb.WriteString("</tbody></table>")
 	sb.WriteString("</div>")
 	sb.WriteString("</div>")
+	return sb.String()
+}
+
+// buildChartSelectOptions returns <option> HTML for the chart-type dropdown,
+// built from API suggestions (excluding table). Uses defaults (bar, line, pie) if none.
+func buildChartSelectOptions(suggestions []*queries.ChartSuggestion) string {
+	defaults := []struct{ value, label string }{
+		{"bar", "Bar"},
+		{"line", "Line"},
+		{"pie", "Pie"},
+	}
+	seen := make(map[string]bool)
+	var opts []struct{ value, label string }
+	for _, s := range suggestions {
+		if s == nil || s.ChartType == "table" {
+			continue
+		}
+		if seen[s.ChartType] {
+			continue
+		}
+		seen[s.ChartType] = true
+		label := s.Label
+		if label == "" {
+			label = s.ChartType
+		}
+		opts = append(opts, struct{ value, label string }{s.ChartType, label})
+	}
+	if len(opts) == 0 {
+		opts = defaults
+	}
+	var sb strings.Builder
+	sb.Grow(len(opts) * 64)
+	for _, o := range opts {
+		sb.WriteString("<option value='")
+		sb.WriteString(template.HTMLEscapeString(o.value))
+		sb.WriteString("'>")
+		sb.WriteString(template.HTMLEscapeString(o.label))
+		sb.WriteString("</option>")
+	}
 	return sb.String()
 }
 
@@ -775,6 +817,80 @@ func FormatReportHTML(report *reports.Report) string {
 			sb.WriteString("</li>")
 		}
 		sb.WriteString("</ul></div>")
+
+		// Advanced metrics: trend summary, anomalies, period history per measure
+		sb.WriteString("<div class=\"advanced-metrics\">")
+		for _, measure := range measures {
+			ts := report.Metrics.TimeSeries[measure]
+			if ts == nil {
+				continue
+			}
+			hasAdvanced := (ts.TrendSummary != nil && ts.TrendSummary.Summary != "") ||
+				len(ts.Anomalies) > 0 || len(ts.Periods) > 0
+			if !hasAdvanced {
+				continue
+			}
+			sb.WriteString("<div class=\"advanced-metric-measure\"><h5 class=\"report-measure-title\">")
+			sb.WriteString(template.HTMLEscapeString(measure))
+			sb.WriteString("</h5>")
+
+			if ts.TrendSummary != nil && ts.TrendSummary.Summary != "" {
+				sb.WriteString("<p class=\"trend-summary\"><span class=\"trend-badge trend-")
+				sb.WriteString(template.HTMLEscapeString(ts.TrendSummary.Direction))
+				sb.WriteString("\">")
+				sb.WriteString(template.HTMLEscapeString(ts.TrendSummary.Direction))
+				sb.WriteString("</span> ")
+				sb.WriteString(template.HTMLEscapeString(ts.TrendSummary.Summary))
+				if ts.MovingAverage != nil {
+					sb.WriteString(" Moving avg (latest): ")
+					sb.WriteString(formatFloatWithCommas(*ts.MovingAverage))
+					sb.WriteString(".")
+				}
+				sb.WriteString("</p>")
+			}
+
+			if len(ts.Anomalies) > 0 {
+				sb.WriteString("<div class=\"anomalies-list\"><strong>Anomalies:</strong> <ul class=\"anomaly-list\">")
+				for _, a := range ts.Anomalies {
+					if a == nil {
+						continue
+					}
+					sb.WriteString("<li><span class=\"anomaly-period\">")
+					sb.WriteString(template.HTMLEscapeString(a.PeriodLabel))
+					sb.WriteString("</span> ")
+					sb.WriteString(formatFloatWithCommas(a.Value))
+					sb.WriteString(" — ")
+					sb.WriteString(template.HTMLEscapeString(a.Reason))
+					sb.WriteString("</li>")
+				}
+				sb.WriteString("</ul></div>")
+			}
+
+			if len(ts.Periods) > 0 {
+				sb.WriteString("<details class=\"period-history-details\"><summary>Period history (")
+				sb.WriteString(strconv.Itoa(len(ts.Periods)))
+				sb.WriteString(" periods)</summary><table class=\"period-history-table\"><thead><tr><th>Period</th><th>Value</th></tr></thead><tbody>")
+				// Show last 15 to keep UI compact
+				start := 0
+				if len(ts.Periods) > 15 {
+					start = len(ts.Periods) - 15
+				}
+				for i := start; i < len(ts.Periods); i++ {
+					p := ts.Periods[i]
+					if p == nil {
+						continue
+					}
+					sb.WriteString("<tr><td>")
+					sb.WriteString(template.HTMLEscapeString(p.Label))
+					sb.WriteString("</td><td>")
+					sb.WriteString(formatFloatWithCommas(p.Value))
+					sb.WriteString("</td></tr>")
+				}
+				sb.WriteString("</tbody></table></details>")
+			}
+			sb.WriteString("</div>")
+		}
+		sb.WriteString("</div>")
 	}
 
 	if report.Narrative != nil {

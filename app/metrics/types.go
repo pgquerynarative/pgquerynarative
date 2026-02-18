@@ -35,13 +35,44 @@ type TopCategory struct {
 	Percentage float64
 }
 
-// TimeSeriesMetric contains time-series analysis results
+// PeriodPoint is a single (label, value) point in a time series.
+type PeriodPoint struct {
+	Label string
+	Value float64
+}
+
+// AnomalyPoint marks a period value that was flagged as anomalous.
+type AnomalyPoint struct {
+	PeriodLabel string
+	Value       float64
+	Reason      string // e.g. "High: 2.3σ above mean"
+}
+
+// TrendSummary describes trend over multiple periods (e.g. linear regression).
+type TrendSummary struct {
+	Direction   string  // "increasing", "decreasing", "stable"
+	Slope       float64 // change per period (e.g. % or absolute)
+	PeriodsUsed int
+	Summary     string // human-readable, e.g. "Increasing ~5.2% per period over last 6 periods"
+}
+
+// TimeSeriesMetric contains time-series analysis results.
+// Advanced metrics: Periods (last N), MovingAverage, Anomalies, TrendSummary.
 type TimeSeriesMetric struct {
 	CurrentPeriod    float64
 	PreviousPeriod   *float64
 	Change           *float64
 	ChangePercentage *float64
 	Trend            string // "up", "down", "flat"
+
+	// Advanced: multi-period series (newest last)
+	Periods []PeriodPoint
+	// Moving average for current/latest period (e.g. 3-period SMA)
+	MovingAverage *float64
+	// Points flagged as statistical anomalies
+	Anomalies []AnomalyPoint
+	// Trend over full series or last N periods
+	TrendSummary *TrendSummary
 }
 
 // Metrics contains all calculated metrics for query results

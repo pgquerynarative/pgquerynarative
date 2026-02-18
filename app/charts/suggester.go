@@ -17,7 +17,8 @@ type Suggestion struct {
 
 // Suggest returns chart suggestions based on column names, types, and row data.
 // Uses metrics.ProfileColumns to infer dimensions, measures, and time series,
-// then suggests bar, line, pie, or table as appropriate.
+// then suggests chart types in relevance order: line/area for time series,
+// bar/pie for category+value, table for raw data.
 func Suggest(columnNames []string, columnTypes []string, rows [][]interface{}) []Suggestion {
 	if len(columnNames) == 0 {
 		return nil
@@ -46,18 +47,18 @@ func Suggest(columnNames []string, columnTypes []string, rows [][]interface{}) [
 		out = append(out, Suggestion{ChartType: chartType, Label: label, Reason: reason})
 	}
 
-	// Time series: date + at least one numeric
+	// Time series: date + at least one numeric — suggest line first, then area
 	if len(dateCols) > 0 && len(numericCols) > 0 {
-		add("line", "Line chart", "Date/time column with numeric values suits a time series line chart.")
+		add("line", "Line chart", "Date/time with numeric values suits a time series line chart.")
+		add("area", "Area chart", "Time series can be shown as a filled area to emphasize volume or cumulative change.")
 	}
 
-	// Category + value: text/dimension + numeric
+	// Category + value: text/dimension + numeric — bar first, pie only when few categories
 	if len(textCols) > 0 && len(numericCols) > 0 {
 		add("bar", "Bar chart", "Category column with numeric values suits a bar chart.")
-		// Pie only if few categories (sample first column for distinct count)
 		distinct := distinctCount(rows, textCols[0])
 		if distinct >= 2 && distinct <= 12 {
-			add("pie", "Pie chart", "Few categories with a single value column suit a pie chart.")
+			add("pie", "Pie chart", "Few categories (2–12) with a value column suit a pie chart for proportions.")
 		}
 	}
 
@@ -66,7 +67,7 @@ func Suggest(columnNames []string, columnTypes []string, rows [][]interface{}) [
 		add("line", "Line chart (multi-series)", "Multiple numeric columns can be shown as series on a line chart.")
 	}
 
-	// Table is always useful for raw data
+	// Table last: always useful for raw data
 	add("table", "Table", "Tabular view of the result set.")
 
 	return out

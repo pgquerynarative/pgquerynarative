@@ -47,17 +47,20 @@
       resultChart = null;
     }
 
+    var chartType = type === 'area' ? 'line' : (type === 'bar' ? 'bar' : type === 'line' ? 'line' : type === 'pie' ? 'pie' : 'bar');
+    var fill = type === 'area';
     var ctx = canvas.getContext('2d');
     var cfg = {
-      type: type === 'bar' ? 'bar' : type === 'line' ? 'line' : type === 'pie' ? 'pie' : 'bar',
+      type: chartType,
       data: {
         labels: parsed.labels,
         datasets: [{
           label: parsed.valueLabel,
           data: parsed.values,
+          fill: fill,
           backgroundColor: type === 'pie'
             ? ['#3498db', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#e67e22']
-            : 'rgba(52, 152, 219, 0.6)',
+            : (fill ? 'rgba(52, 152, 219, 0.3)' : 'rgba(52, 152, 219, 0.6)'),
           borderColor: 'rgba(52, 152, 219, 1)',
           borderWidth: 1
         }]

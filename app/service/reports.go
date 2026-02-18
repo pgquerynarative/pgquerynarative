@@ -335,6 +335,37 @@ func convertMetrics(m *metrics.Metrics) *reports.MetricsData {
 		if ts.ChangePercentage != nil {
 			tsData.ChangePercentage = ts.ChangePercentage
 		}
+		if len(ts.Periods) > 0 {
+			tsData.Periods = make([]*reports.PeriodPointData, len(ts.Periods))
+			for i := range ts.Periods {
+				tsData.Periods[i] = &reports.PeriodPointData{
+					Label: ts.Periods[i].Label,
+					Value: ts.Periods[i].Value,
+				}
+			}
+		}
+		if ts.MovingAverage != nil {
+			tsData.MovingAverage = ts.MovingAverage
+		}
+		if len(ts.Anomalies) > 0 {
+			tsData.Anomalies = make([]*reports.AnomalyPointData, len(ts.Anomalies))
+			for i := range ts.Anomalies {
+				tsData.Anomalies[i] = &reports.AnomalyPointData{
+					PeriodLabel: ts.Anomalies[i].PeriodLabel,
+					Value:       ts.Anomalies[i].Value,
+					Reason:      ts.Anomalies[i].Reason,
+				}
+			}
+		}
+		if ts.TrendSummary != nil {
+			pu := int32(ts.TrendSummary.PeriodsUsed)
+			tsData.TrendSummary = &reports.TrendSummaryData{
+				Direction:   ts.TrendSummary.Direction,
+				Summary:     ts.TrendSummary.Summary,
+				Slope:       &ts.TrendSummary.Slope,
+				PeriodsUsed: &pu,
+			}
+		}
 		timeSeries[col] = tsData
 	}
 

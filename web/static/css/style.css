@@ -381,6 +381,110 @@ body[data-page="reports"] .nav-link[href="/reports"] {
 	color: var(--color-text-muted);
 }
 
+/* Advanced metrics: trend summary, anomalies, period history */
+.advanced-metrics {
+	margin-top: 16px;
+	padding: 16px 18px;
+	background: var(--color-bg-subtle);
+	border-radius: var(--radius-sm);
+	border: 1px solid var(--color-border);
+}
+
+.advanced-metric-measure {
+	margin-bottom: 16px;
+}
+
+.advanced-metric-measure:last-child {
+	margin-bottom: 0;
+}
+
+.report-measure-title {
+	font-size: 0.9375rem;
+	font-weight: 600;
+	color: var(--color-text);
+	margin-bottom: 8px;
+}
+
+.trend-summary {
+	margin: 0 0 10px 0;
+	font-size: 0.9375rem;
+	line-height: 1.5;
+}
+
+.trend-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 4px;
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-transform: capitalize;
+}
+
+.trend-badge.trend-increasing {
+	background: var(--color-success-bg);
+	color: var(--color-success);
+}
+
+.trend-badge.trend-decreasing {
+	background: var(--color-error-bg);
+	color: var(--color-error);
+}
+
+.trend-badge.trend-stable {
+	background: var(--color-bg-subtle);
+	color: var(--color-text-muted);
+}
+
+.anomalies-list {
+	margin: 8px 0;
+	font-size: 0.875rem;
+}
+
+.anomaly-list {
+	margin: 4px 0 0 16px;
+	padding-left: 0;
+	list-style: disc;
+}
+
+.anomaly-list li {
+	margin: 2px 0;
+}
+
+.anomaly-period {
+	font-weight: 500;
+	color: var(--color-text);
+}
+
+.period-history-details {
+	margin-top: 8px;
+	font-size: 0.875rem;
+}
+
+.period-history-details summary {
+	cursor: pointer;
+	font-weight: 500;
+	color: var(--color-primary);
+}
+
+.period-history-table {
+	width: 100%;
+	margin-top: 8px;
+	border-collapse: collapse;
+	font-size: 0.8125rem;
+}
+
+.period-history-table th,
+.period-history-table td {
+	padding: 6px 10px;
+	text-align: left;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.period-history-table th {
+	font-weight: 600;
+	color: var(--color-text-muted);
+}
+
 .suggestion-list {
 	list-style: none;
 	padding-left: 0;

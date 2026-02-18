@@ -365,6 +365,78 @@ func marshalReportsTimeSeriesDataToTimeSeriesDataResponseBody(v *reports.TimeSer
 		Change:           v.Change,
 		ChangePercentage: v.ChangePercentage,
 		Trend:            v.Trend,
+		MovingAverage:    v.MovingAverage,
+	}
+	if v.Periods != nil {
+		res.Periods = make([]*PeriodPointDataResponseBody, len(v.Periods))
+		for i, val := range v.Periods {
+			if val == nil {
+				res.Periods[i] = nil
+				continue
+			}
+			res.Periods[i] = marshalReportsPeriodPointDataToPeriodPointDataResponseBody(val)
+		}
+	}
+	if v.Anomalies != nil {
+		res.Anomalies = make([]*AnomalyPointDataResponseBody, len(v.Anomalies))
+		for i, val := range v.Anomalies {
+			if val == nil {
+				res.Anomalies[i] = nil
+				continue
+			}
+			res.Anomalies[i] = marshalReportsAnomalyPointDataToAnomalyPointDataResponseBody(val)
+		}
+	}
+	if v.TrendSummary != nil {
+		res.TrendSummary = marshalReportsTrendSummaryDataToTrendSummaryDataResponseBody(v.TrendSummary)
+	}
+
+	return res
+}
+
+// marshalReportsPeriodPointDataToPeriodPointDataResponseBody builds a value of
+// type *PeriodPointDataResponseBody from a value of type
+// *reports.PeriodPointData.
+func marshalReportsPeriodPointDataToPeriodPointDataResponseBody(v *reports.PeriodPointData) *PeriodPointDataResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &PeriodPointDataResponseBody{
+		Label: v.Label,
+		Value: v.Value,
+	}
+
+	return res
+}
+
+// marshalReportsAnomalyPointDataToAnomalyPointDataResponseBody builds a value
+// of type *AnomalyPointDataResponseBody from a value of type
+// *reports.AnomalyPointData.
+func marshalReportsAnomalyPointDataToAnomalyPointDataResponseBody(v *reports.AnomalyPointData) *AnomalyPointDataResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &AnomalyPointDataResponseBody{
+		PeriodLabel: v.PeriodLabel,
+		Value:       v.Value,
+		Reason:      v.Reason,
+	}
+
+	return res
+}
+
+// marshalReportsTrendSummaryDataToTrendSummaryDataResponseBody builds a value
+// of type *TrendSummaryDataResponseBody from a value of type
+// *reports.TrendSummaryData.
+func marshalReportsTrendSummaryDataToTrendSummaryDataResponseBody(v *reports.TrendSummaryData) *TrendSummaryDataResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &TrendSummaryDataResponseBody{
+		Direction:   v.Direction,
+		Slope:       v.Slope,
+		PeriodsUsed: v.PeriodsUsed,
+		Summary:     v.Summary,
 	}
 
 	return res

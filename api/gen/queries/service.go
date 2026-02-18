@@ -42,7 +42,7 @@ const ServiceName = "queries"
 var MethodNames = [5]string{"run", "list_saved", "save", "get_saved", "delete_saved"}
 
 type ChartSuggestion struct {
-	// Chart type identifier: bar, line, pie, table
+	// Chart type identifier: bar, line, pie, area, table
 	ChartType string
 	// Human-readable label
 	Label string

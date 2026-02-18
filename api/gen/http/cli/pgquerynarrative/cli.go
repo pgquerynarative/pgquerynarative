@@ -32,7 +32,7 @@ func UsageCommands() []string {
 // UsageExamples produces an example of a valid invocation of the CLI tool.
 func UsageExamples() string {
 	return os.Args[0] + " " + "reports generate --body '{\n      \"saved_query_id\": \"ee18c6f5-9ae0-4107-a02a-e4e5771ac473\",\n      \"sql\": \"2x9\"\n   }'" + "\n" +
-		os.Args[0] + " " + "queries run --body '{\n      \"limit\": 249,\n      \"sql\": \"w\"\n   }'" + "\n" +
+		os.Args[0] + " " + "queries run --body '{\n      \"limit\": 342,\n      \"sql\": \"25\"\n   }'" + "\n" +
 		""
 }
 
@@ -262,7 +262,7 @@ func reportsGetUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "reports get --id \"433a63cc-f6bd-4f6f-ae1b-694acce97e85\"")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "reports get --id \"004af309-bb1b-4ad3-8448-15a8ec051a89\"")
 }
 
 func reportsListUsage() {
@@ -284,7 +284,7 @@ func reportsListUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "reports list --saved-query-id \"17c987e8-fd84-4e69-9ec9-03330078cd9a\" --limit 99 --offset 1433005544")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "reports list --saved-query-id \"90e30201-52ad-4892-a4d4-9df83364dd45\" --limit 15 --offset 490531137")
 }
 
 // queriesUsage displays the usage of the queries command and its subcommands.
@@ -316,7 +316,7 @@ func queriesRunUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "queries run --body '{\n      \"limit\": 249,\n      \"sql\": \"w\"\n   }'")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "queries run --body '{\n      \"limit\": 342,\n      \"sql\": \"25\"\n   }'")
 }
 
 func queriesListSavedUsage() {
@@ -338,7 +338,7 @@ func queriesListSavedUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "queries list-saved --tags '[\n      \"Assumenda accusamus doloribus.\",\n      \"Minima vitae animi.\",\n      \"Natus consequuntur non.\",\n      \"Recusandae saepe soluta nemo velit facilis iusto.\"\n   ]' --limit 90 --offset 428797046")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "queries list-saved --tags '[\n      \"Accusamus doloribus nihil minima vitae animi dolorem.\",\n      \"Consequuntur non sint recusandae saepe soluta.\",\n      \"Velit facilis iusto.\"\n   ]' --limit 90 --offset 428797046")
 }
 
 func queriesSaveUsage() {

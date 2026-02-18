@@ -124,11 +124,43 @@ type TimeSeriesDataResponseBody struct {
 	Change           *float64 `form:"change,omitempty" json:"change,omitempty" xml:"change,omitempty"`
 	ChangePercentage *float64 `form:"change_percentage,omitempty" json:"change_percentage,omitempty" xml:"change_percentage,omitempty"`
 	Trend            *string  `form:"trend,omitempty" json:"trend,omitempty" xml:"trend,omitempty"`
+	// Last N period labels and values (newest last)
+	Periods []*PeriodPointDataResponseBody `form:"periods,omitempty" json:"periods,omitempty" xml:"periods,omitempty"`
+	// Simple moving average for latest period (e.g. 3-period SMA)
+	MovingAverage *float64 `form:"moving_average,omitempty" json:"moving_average,omitempty" xml:"moving_average,omitempty"`
+	// Periods flagged as statistical anomalies (e.g. z-score)
+	Anomalies []*AnomalyPointDataResponseBody `form:"anomalies,omitempty" json:"anomalies,omitempty" xml:"anomalies,omitempty"`
+	// Trend over multiple periods (direction, slope, summary)
+	TrendSummary *TrendSummaryDataResponseBody `form:"trend_summary,omitempty" json:"trend_summary,omitempty" xml:"trend_summary,omitempty"`
+}
+
+// PeriodPointDataResponseBody is used to define fields on response body types.
+type PeriodPointDataResponseBody struct {
+	Label *string  `form:"label,omitempty" json:"label,omitempty" xml:"label,omitempty"`
+	Value *float64 `form:"value,omitempty" json:"value,omitempty" xml:"value,omitempty"`
+}
+
+// AnomalyPointDataResponseBody is used to define fields on response body types.
+type AnomalyPointDataResponseBody struct {
+	PeriodLabel *string  `form:"period_label,omitempty" json:"period_label,omitempty" xml:"period_label,omitempty"`
+	Value       *float64 `form:"value,omitempty" json:"value,omitempty" xml:"value,omitempty"`
+	Reason      *string  `form:"reason,omitempty" json:"reason,omitempty" xml:"reason,omitempty"`
+}
+
+// TrendSummaryDataResponseBody is used to define fields on response body types.
+type TrendSummaryDataResponseBody struct {
+	// increasing, decreasing, or stable
+	Direction *string `form:"direction,omitempty" json:"direction,omitempty" xml:"direction,omitempty"`
+	// Change per period from linear regression
+	Slope       *float64 `form:"slope,omitempty" json:"slope,omitempty" xml:"slope,omitempty"`
+	PeriodsUsed *int32   `form:"periods_used,omitempty" json:"periods_used,omitempty" xml:"periods_used,omitempty"`
+	// Human-readable trend description
+	Summary *string `form:"summary,omitempty" json:"summary,omitempty" xml:"summary,omitempty"`
 }
 
 // ChartSuggestionResponseBody is used to define fields on response body types.
 type ChartSuggestionResponseBody struct {
-	// Chart type identifier: bar, line, pie, table
+	// Chart type identifier: bar, line, pie, area, table
 	ChartType *string `form:"chart_type,omitempty" json:"chart_type,omitempty" xml:"chart_type,omitempty"`
 	// Human-readable label
 	Label *string `form:"label,omitempty" json:"label,omitempty" xml:"label,omitempty"`
@@ -465,6 +497,64 @@ func ValidateTimeSeriesDataResponseBody(body *TimeSeriesDataResponseBody) (err e
 	}
 	if body.Trend == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("trend", "body"))
+	}
+	for _, e := range body.Periods {
+		if e != nil {
+			if err2 := ValidatePeriodPointDataResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.Anomalies {
+		if e != nil {
+			if err2 := ValidateAnomalyPointDataResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	if body.TrendSummary != nil {
+		if err2 := ValidateTrendSummaryDataResponseBody(body.TrendSummary); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidatePeriodPointDataResponseBody runs the validations defined on
+// PeriodPointDataResponseBody
+func ValidatePeriodPointDataResponseBody(body *PeriodPointDataResponseBody) (err error) {
+	if body.Label == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("label", "body"))
+	}
+	if body.Value == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("value", "body"))
+	}
+	return
+}
+
+// ValidateAnomalyPointDataResponseBody runs the validations defined on
+// AnomalyPointDataResponseBody
+func ValidateAnomalyPointDataResponseBody(body *AnomalyPointDataResponseBody) (err error) {
+	if body.PeriodLabel == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("period_label", "body"))
+	}
+	if body.Value == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("value", "body"))
+	}
+	if body.Reason == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("reason", "body"))
+	}
+	return
+}
+
+// ValidateTrendSummaryDataResponseBody runs the validations defined on
+// TrendSummaryDataResponseBody
+func ValidateTrendSummaryDataResponseBody(body *TrendSummaryDataResponseBody) (err error) {
+	if body.Direction == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("direction", "body"))
+	}
+	if body.Summary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("summary", "body"))
 	}
 	return
 }

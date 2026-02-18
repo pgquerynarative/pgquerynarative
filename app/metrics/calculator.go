@@ -3,6 +3,7 @@ package metrics
 import (
 	"math"
 	"sort"
+	"strconv"
 	"time"
 )
 
@@ -263,9 +264,26 @@ func (m *Metrics) calculateTimeSeries(columns []string, rows [][]interface{}, pr
 	m.CurrentPeriodLabel = currentPeriod
 	m.PreviousPeriodLabel = previousPeriod
 
-	// Calculate metrics for each measure
+	const maxPeriods = 24
+	const movingAvgWindow = 3
+	const anomalySigma = 2.0
+	const trendPeriods = 6
+
+	// Build ordered values per measure (one float per period)
+	measureValues := make(map[string][]float64)
 	for _, measureIdx := range measureCols {
 		measureName := columns[measureIdx]
+		vals := make([]float64, 0, len(periods))
+		for _, p := range periods {
+			vals = append(vals, periodTotals[p][measureIdx])
+		}
+		measureValues[measureName] = vals
+	}
+
+	// Calculate metrics for each measure (including advanced)
+	for _, measureIdx := range measureCols {
+		measureName := columns[measureIdx]
+		values := measureValues[measureName]
 
 		current := periodTotals[currentPeriod][measureIdx]
 		previous := periodTotals[previousPeriod][measureIdx]
@@ -288,13 +306,168 @@ func (m *Metrics) calculateTimeSeries(columns []string, rows [][]interface{}, pr
 			}
 		}
 
-		m.TimeSeries[measureName] = TimeSeriesMetric{
+		ts := TimeSeriesMetric{
 			CurrentPeriod:    current,
 			PreviousPeriod:   &previous,
 			Change:           &change,
 			ChangePercentage: changePct,
 			Trend:            trend,
 		}
+
+		// Advanced: last N periods as Periods (newest last)
+		nPeriods := len(periods)
+		if nPeriods > maxPeriods {
+			nPeriods = maxPeriods
+		}
+		start := len(periods) - nPeriods
+		if start < 0 {
+			start = 0
+		}
+		ts.Periods = make([]PeriodPoint, 0, nPeriods)
+		for i := start; i < len(periods); i++ {
+			ts.Periods = append(ts.Periods, PeriodPoint{
+				Label: periods[i],
+				Value: values[i],
+			})
+		}
+
+		// Moving average (SMA) for latest period
+		if len(values) >= movingAvgWindow {
+			var sum float64
+			for j := len(values) - movingAvgWindow; j < len(values); j++ {
+				sum += values[j]
+			}
+			ma := sum / float64(movingAvgWindow)
+			ts.MovingAverage = &ma
+		}
+
+		// Anomaly detection: z-score; flag points beyond anomalySigma std devs
+		if len(values) >= 3 {
+			mean, std := meanAndStd(values)
+			if std > 0 {
+				for i, v := range values {
+					z := (v - mean) / std
+					if math.Abs(z) >= anomalySigma {
+						reason := "High"
+						if z < 0 {
+							reason = "Low"
+						}
+						ts.Anomalies = append(ts.Anomalies, AnomalyPoint{
+							PeriodLabel: periods[i],
+							Value:       v,
+							Reason:      formatAnomalyReason(reason, z, anomalySigma),
+						})
+					}
+				}
+			}
+		}
+
+		// Trend summary: linear regression over last trendPeriods (or all)
+		nTrend := trendPeriods
+		if len(values) < nTrend {
+			nTrend = len(values)
+		}
+		if nTrend >= 2 {
+			trendStart := len(values) - nTrend
+			if trendStart < 0 {
+				trendStart = 0
+				nTrend = len(values)
+			}
+			slope, _ := linearRegression(values[trendStart:])
+			avgVal, _ := meanAndStd(values[trendStart:])
+			direction := "stable"
+			if avgVal != 0 && math.Abs(slope) > 1e-10 {
+				pctSlope := (slope / math.Abs(avgVal)) * 100
+				if pctSlope > trendThresholdPercent {
+					direction = "increasing"
+				} else if pctSlope < -trendThresholdPercent {
+					direction = "decreasing"
+				}
+			}
+			summary := formatTrendSummary(direction, slope, avgVal, nTrend)
+			ts.TrendSummary = &TrendSummary{
+				Direction:   direction,
+				Slope:       slope,
+				PeriodsUsed: nTrend,
+				Summary:     summary,
+			}
+		}
+
+		m.TimeSeries[measureName] = ts
+	}
+}
+
+func meanAndStd(values []float64) (mean, std float64) {
+	if len(values) == 0 {
+		return 0, 0
+	}
+	var sum float64
+	for _, v := range values {
+		sum += v
+	}
+	mean = sum / float64(len(values))
+	var sqSum float64
+	for _, v := range values {
+		d := v - mean
+		sqSum += d * d
+	}
+	variance := sqSum / float64(len(values))
+	if variance <= 0 {
+		return mean, 0
+	}
+	return mean, math.Sqrt(variance)
+}
+
+func formatAnomalyReason(highLow string, z, sigma float64) string {
+	zAbs := math.Abs(z)
+	if zAbs < 10 {
+		return highLow + ": " + formatOneDecimal(zAbs) + "σ from mean (threshold " + formatOneDecimal(sigma) + "σ)"
+	}
+	return highLow + ": extreme value (" + formatOneDecimal(zAbs) + "σ from mean)"
+}
+
+func formatOneDecimal(x float64) string {
+	return strconv.FormatFloat(x, 'f', 1, 64)
+}
+
+// linearRegression returns slope and intercept for y = slope*x + intercept (x = 0,1,2,...).
+func linearRegression(y []float64) (slope, intercept float64) {
+	n := float64(len(y))
+	if n < 2 {
+		return 0, 0
+	}
+	var sumX, sumY, sumXY, sumX2 float64
+	for i, v := range y {
+		x := float64(i)
+		sumX += x
+		sumY += v
+		sumXY += x * v
+		sumX2 += x * x
+	}
+	denom := n*sumX2 - sumX*sumX
+	if math.Abs(denom) < 1e-20 {
+		return 0, sumY / n
+	}
+	slope = (n*sumXY - sumX*sumY) / denom
+	intercept = (sumY - slope*sumX) / n
+	return slope, intercept
+}
+
+func formatTrendSummary(direction string, slope, avgVal float64, periodsUsed int) string {
+	if periodsUsed == 0 {
+		return ""
+	}
+	if math.Abs(avgVal) < 1e-10 {
+		return direction + " over last " + strconv.Itoa(periodsUsed) + " periods (absolute change ~" + formatOneDecimal(slope) + " per period)."
+	}
+	pctPerPeriod := (slope / math.Abs(avgVal)) * 100
+	switch direction {
+	case "increasing":
+		return "Increasing ~" + formatOneDecimal(pctPerPeriod) + "% per period over last " + strconv.Itoa(periodsUsed) + " periods."
+	case "decreasing":
+		return "Decreasing ~" + formatOneDecimal(-pctPerPeriod) + "% per period over last " + strconv.Itoa(periodsUsed) + " periods."
+	default:
+		return "Stable over last " + strconv.Itoa(periodsUsed) + " periods."
 	}
 }
 
