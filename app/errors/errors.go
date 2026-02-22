@@ -3,7 +3,10 @@
 // and easier maintenance.
 package errors
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 // Query validation errors
 var (
@@ -78,19 +81,19 @@ var (
 	ErrInvalidQueryLimit = errors.New("invalid query limit")
 )
 
-// Helper functions for creating wrapped errors with context
+// Helper functions for wrapping errors with context. Use %w so callers can use errors.Is/As.
 
 // WrapQueryError wraps a query-related error with additional context.
-func WrapQueryError(err error, context string) error {
-	return errors.New(context + ": " + err.Error())
+func WrapQueryError(err error, ctx string) error {
+	return fmt.Errorf("%s: %w", ctx, err)
 }
 
 // WrapDatabaseError wraps a database-related error with additional context.
 func WrapDatabaseError(err error, operation string) error {
-	return errors.New(operation + ": " + err.Error())
+	return fmt.Errorf("%s: %w", operation, err)
 }
 
 // WrapLLMError wraps an LLM-related error with additional context.
 func WrapLLMError(err error, operation string) error {
-	return errors.New(operation + ": " + err.Error())
+	return fmt.Errorf("%s: %w", operation, err)
 }

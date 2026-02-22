@@ -19,146 +19,122 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-const defaultBaseURL = "http://localhost:8080"
+const (
+	defaultBaseURL      = "http://localhost:8080"
+	apiPrefix           = "/api/v1"
+	httpClientTimeout   = 60 * time.Second
+	defaultRunLimit     = 100
+	defaultListLimit    = 20
+	defaultSuggestLimit = 5
+)
 
 func main() {
 	baseURL := os.Getenv("PGQUERYNARRATIVE_URL")
 	if baseURL == "" {
 		baseURL = defaultBaseURL
 	}
-	client := &apiClient{baseURL: baseURL, http: &http.Client{Timeout: 60 * time.Second}}
+	client := &apiClient{baseURL: baseURL, http: &http.Client{Timeout: httpClientTimeout}}
 
 	server := mcp.NewServer(&mcp.Implementation{
 		Name:    "pgquerynarrative",
 		Version: "1.0.0",
 	}, nil)
 
-	// run_query: execute a read-only SQL query against the demo schema
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "run_query",
 		Description: "Run a read-only SQL query against the PgQueryNarrative database (demo schema). Returns columns and rows as JSON.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input RunQueryInput) (*mcp.CallToolResult, any, error) {
 		limit := input.Limit
 		if limit <= 0 {
-			limit = 100
+			limit = defaultRunLimit
 		}
-		body, err := client.post(ctx, "/api/v1/queries/run", map[string]any{"sql": input.SQL, "limit": limit})
-		if err != nil {
-			return toolError(err), nil, nil
-		}
-		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: body}}}, nil, nil
+		body, err := client.post(ctx, apiPrefix+"/queries/run", map[string]any{"sql": input.SQL, "limit": limit})
+		return toolResult(body, err)
 	})
 
-	// generate_report: run a query and generate an LLM narrative report
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "generate_report",
 		Description: "Run a SQL query and generate a narrative report (headline, takeaways, drivers, limitations, recommendations) using the configured LLM.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input GenerateReportInput) (*mcp.CallToolResult, any, error) {
-		body, err := client.post(ctx, "/api/v1/reports/generate", map[string]any{"sql": input.SQL})
-		if err != nil {
-			return toolError(err), nil, nil
-		}
-		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: body}}}, nil, nil
+		body, err := client.post(ctx, apiPrefix+"/reports/generate", map[string]any{"sql": input.SQL})
+		return toolResult(body, err)
 	})
 
-	// list_saved_queries: list saved queries
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "list_saved_queries",
 		Description: "List saved queries (optional limit and offset).",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input ListSavedQueriesInput) (*mcp.CallToolResult, any, error) {
-		limit, offset := input.Limit, input.Offset
+		limit := input.Limit
 		if limit <= 0 {
-			limit = 20
+			limit = defaultListLimit
 		}
-		path := fmt.Sprintf("/api/v1/queries/saved?limit=%d&offset=%d", limit, offset)
-		body, err := client.get(ctx, path)
-		if err != nil {
-			return toolError(err), nil, nil
-		}
-		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: body}}}, nil, nil
+		body, err := client.get(ctx, listURL(apiPrefix+"/queries/saved", limit, input.Offset))
+		return toolResult(body, err)
 	})
 
-	// get_report: fetch a report by ID
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "get_report",
 		Description: "Get a report by its ID (UUID).",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input GetReportInput) (*mcp.CallToolResult, any, error) {
-		body, err := client.get(ctx, "/api/v1/reports/"+input.ID)
-		if err != nil {
-			return toolError(err), nil, nil
-		}
-		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: body}}}, nil, nil
+		body, err := client.get(ctx, apiPrefix+"/reports/"+input.ID)
+		return toolResult(body, err)
 	})
 
-	// list_reports: list reports with optional limit/offset
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "list_reports",
 		Description: "List generated reports (optional limit and offset).",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input ListReportsInput) (*mcp.CallToolResult, any, error) {
-		limit, offset := input.Limit, input.Offset
+		limit := input.Limit
 		if limit <= 0 {
-			limit = 20
+			limit = defaultListLimit
 		}
-		path := fmt.Sprintf("/api/v1/reports?limit=%d&offset=%d", limit, offset)
-		body, err := client.get(ctx, path)
-		if err != nil {
-			return toolError(err), nil, nil
-		}
-		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: body}}}, nil, nil
+		body, err := client.get(ctx, listURL(apiPrefix+"/reports", limit, input.Offset))
+		return toolResult(body, err)
 	})
 
-	// get_schema: return database schema (allowed schemas, tables, columns) for querying
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "get_schema",
 		Description: "Returns the database schema available for querying (allowed schemas, tables, columns). Use this to see what tables and columns you can use in run_query.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input GetSchemaInput) (*mcp.CallToolResult, any, error) {
-		body, err := client.get(ctx, "/api/v1/schema")
-		if err != nil {
-			return toolError(err), nil, nil
-		}
-		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: body}}}, nil, nil
+		body, err := client.get(ctx, apiPrefix+"/schema")
+		return toolResult(body, err)
 	})
 
-	// get_context: combined schema + saved queries for full context
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "get_context",
 		Description: "Returns combined context: schema (tables, columns) plus a list of saved queries (name, sql, description). Use this to understand the data model and existing saved queries before suggesting or running SQL.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input GetContextInput) (*mcp.CallToolResult, any, error) {
-		savedLimit, savedOffset := input.SavedLimit, input.SavedOffset
+		savedLimit := input.SavedLimit
 		if savedLimit <= 0 {
-			savedLimit = 20
+			savedLimit = defaultListLimit
 		}
-		schemaBody, err1 := client.get(ctx, "/api/v1/schema")
-		savedPath := fmt.Sprintf("/api/v1/queries/saved?limit=%d&offset=%d", savedLimit, savedOffset)
-		savedBody, err2 := client.get(ctx, savedPath)
+		schemaBody, err1 := client.get(ctx, apiPrefix+"/schema")
+		savedBody, err2 := client.get(ctx, listURL(apiPrefix+"/queries/saved", savedLimit, input.SavedOffset))
 		out := buildContextResult(schemaBody, savedBody, err1, err2)
 		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: out}}}, nil, nil
 	})
 
-	// suggest_queries: suggest SQL based on optional intent (curated + saved-query match)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "suggest_queries",
 		Description: "Suggests SQL queries based on optional intent (e.g. 'sales by category'). Returns curated examples and saved queries that match. Use the suggested SQL with run_query or refine before running.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, input SuggestQueriesInput) (*mcp.CallToolResult, any, error) {
-		path := "/api/v1/suggestions/queries?"
+		limit := input.Limit
+		if limit <= 0 {
+			limit = defaultSuggestLimit
+		}
+		path := apiPrefix + "/suggestions/queries?"
 		if input.Intent != "" {
 			path += "intent=" + url.QueryEscape(input.Intent) + "&"
 		}
-		if input.Limit > 0 {
-			path += fmt.Sprintf("limit=%d", input.Limit)
-		} else {
-			path += "limit=5"
-		}
+		path += "limit=" + strconv.Itoa(limit)
 		body, err := client.get(ctx, path)
-		if err != nil {
-			return toolError(err), nil, nil
-		}
-		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: body}}}, nil, nil
+		return toolResult(body, err)
 	})
 
 	if err := server.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
@@ -244,11 +220,19 @@ func (c *apiClient) do(req *http.Request) (string, error) {
 	return string(b), nil
 }
 
-func toolError(err error) *mcp.CallToolResult {
-	return &mcp.CallToolResult{
-		IsError: true,
-		Content: []mcp.Content{&mcp.TextContent{Text: err.Error()}},
+// toolResult returns a successful MCP tool result with body, or an error result if err is non-nil.
+func toolResult(body string, err error) (*mcp.CallToolResult, any, error) {
+	if err != nil {
+		return &mcp.CallToolResult{
+			IsError: true,
+			Content: []mcp.Content{&mcp.TextContent{Text: err.Error()}},
+		}, nil, nil
 	}
+	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: body}}}, nil, nil
+}
+
+func listURL(base string, limit, offset int) string {
+	return fmt.Sprintf("%s?limit=%d&offset=%d", base, limit, offset)
 }
 
 // buildContextResult merges schema and saved-queries API responses into one text block.

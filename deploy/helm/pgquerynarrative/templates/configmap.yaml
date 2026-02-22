@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "pgquerynarrative.labels" . | nindent 4 }}
+data:
+  PGQUERYNARRATIVE_HOST: {{ .Values.server.host | quote }}
+  PGQUERYNARRATIVE_PORT: {{ .Values.server.port | quote }}
+  DATABASE_HOST: {{ .Values.database.host | quote }}
+  DATABASE_PORT: {{ .Values.database.port | quote }}
+  DATABASE_NAME: {{ .Values.database.name | quote }}
+  DATABASE_USER: {{ .Values.database.user | quote }}
+  DATABASE_SSL_MODE: {{ .Values.database.sslMode | quote }}
+  DATABASE_MAX_CONNECTIONS: {{ .Values.database.maxConnections | quote }}
+  DATABASE_READONLY_USER: {{ .Values.database.readonlyUser | quote }}
+  LLM_PROVIDER: {{ .Values.llm.provider | quote }}
+  LLM_MODEL: {{ .Values.llm.model | quote }}
+  LLM_BASE_URL: {{ .Values.llm.baseURL | quote }}
+  PGQUERYNARRATIVE_SEED: {{ .Values.seed | quote }}

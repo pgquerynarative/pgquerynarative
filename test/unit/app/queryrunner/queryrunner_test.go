@@ -18,9 +18,12 @@ func TestValidator(t *testing.T) {
 	}{
 		{"valid_select", "SELECT * FROM demo.sales", nil},
 		{"valid_with", "WITH cte AS (SELECT * FROM demo.sales) SELECT * FROM cte", nil},
+		{"empty_query", "", errors.ErrOnlySelectAllowed},
+		{"whitespace_only", "   \n\t  ", errors.ErrOnlySelectAllowed},
 		{"too_long", "SELECT * FROM demo.sales WHERE '" + strings.Repeat("a", 20000) + "' = 'x'", errors.ErrQueryTooLong},
 		{"non_select", "UPDATE demo.sales SET quantity = 1", errors.ErrOnlySelectAllowed},
-		{"disallowed", "SELECT * FROM demo.sales; DROP TABLE demo.sales", errors.ErrMultipleStatements},
+		{"disallowed_keyword_insert", "INSERT INTO demo.sales (id) SELECT id FROM demo.sales", errors.ErrDisallowedKeyword},
+		{"disallowed_keyword_drop", "SELECT * FROM demo.sales; DROP TABLE demo.sales", errors.ErrMultipleStatements},
 		{"schema_not_allowed", "SELECT * FROM public.users", errors.ErrSchemaNotAllowed},
 		{"alias_column_allowed", "WITH cte AS (SELECT region AS r FROM demo.sales) SELECT c.r FROM cte c", nil},
 		{"complex_cte_with_aliases", `WITH regional_totals AS (SELECT region, product_category, SUM(total_amount) AS revenue FROM demo.sales WHERE date >= CURRENT_DATE - INTERVAL '365 days' GROUP BY region, product_category),

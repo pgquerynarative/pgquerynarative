@@ -57,4 +57,10 @@ curl http://localhost:8080/api/v1/queries/saved
 
 Supported: 16, 17, 18. Docker default: `postgres:18-alpine`. Override: `POSTGRES_IMAGE=postgres:17-alpine make start-docker`.
 
-**See also:** [Configuration](../configuration.md), [Quick start](quickstart.md), [Troubleshooting](../reference/troubleshooting.md)
+## See also
+
+- [Configuration](../configuration.md) — Environment variables
+- [Quick start](quickstart.md) — Minimal run steps
+- [Deployment](../reference/deployment.md) — Docker, Kubernetes, Helm
+- [Troubleshooting](../reference/troubleshooting.md) — Common issues
+- [Documentation index](../README.md)

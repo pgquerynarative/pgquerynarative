@@ -15,7 +15,7 @@ import (
 	"net/http"
 	"net/url"
 
-	suggestions "github.com/pgquerynarrative/pgquerynarrative/gen/suggestions"
+	suggestions "github.com/pgquerynarrative/pgquerynarrative/api/gen/suggestions"
 	goahttp "goa.design/goa/v3/http"
 )
 

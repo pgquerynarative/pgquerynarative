@@ -1,3 +1,7 @@
+// Package db provides PostgreSQL connection pools for the application.
+// ReadOnly is used for executing user queries (least privilege); App is used
+// for saved_queries, reports, and other app tables. Used by the server and by
+// pkg/narrative when constructing the client.
 package db
 
 import (
@@ -11,11 +15,14 @@ import (
 	"github.com/pgquerynarrative/pgquerynarrative/app/errors"
 )
 
+// Pools holds the read-only and app database connection pools. Call Close when done.
 type Pools struct {
 	ReadOnly *pgxpool.Pool
 	App      *pgxpool.Pool
 }
 
+// NewPools creates both connection pools from the given database config. It retries
+// on failure and pings to verify connectivity. Caller must call Pools.Close() when done.
 func NewPools(ctx context.Context, cfg config.DatabaseConfig) (*Pools, error) {
 	readOnlyURL := buildConnectionURL(
 		cfg.ReadOnlyUser,

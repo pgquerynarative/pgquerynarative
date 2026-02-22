@@ -1,0 +1,12 @@
+.git
+.github
+*.md
+docs
+examples
+test
+changelog
+.cursor
+*.test
+coverage.out
+bin/
+gen/

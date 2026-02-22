@@ -10,21 +10,26 @@ Unit and integration tests for PgQueryNarrative. All unit tests live under `test
 make test-unit
 ```
 
-Or explicitly:
+Or explicitly (same as `make test-unit`):
 
 ```bash
-go test ./test/unit/... ./cmd/server/... -v
+go test ./test/unit/... ./cmd/server/... ./pkg/narrative/... -v
 ```
 
 **By package:**
 
 ```bash
+go test ./test/unit/app/catalog/... -v      # Schema/catalog loader
 go test ./test/unit/app/charts/... -v       # Chart suggestions
 go test ./test/unit/app/metrics/... -v      # Metrics, time series, data quality
+go test ./test/unit/app/llm/... -v          # Narrative prompt builder
 go test ./test/unit/app/queryrunner/... -v  # Query validation
-go test ./test/unit/app/story/... -v        # Narrative sanitizer
 go test ./test/unit/app/service/... -v      # Reports service, API conversion
+go test ./test/unit/app/story/... -v        # Narrative sanitizer
+go test ./test/unit/app/suggestions/... -v  # Query suggestions (curated, intent)
 go test ./test/unit/web/... -v              # Report HTML formatting
+go test ./cmd/server/... -v                 # Request logging middleware
+go test ./pkg/narrative/... -v              # Client, run-query options, validation
 ```
 
 **Single test:**
@@ -49,15 +54,21 @@ go test ./test/e2e/... -v
 
 | Package | What is tested |
 |---------|-----------------|
+| `test/unit/app/catalog` | Schema/catalog loader (empty allowed schemas) |
 | `test/unit/app/charts` | Chart suggestions (bar, line, pie, area, table) |
 | `test/unit/app/metrics` | Period comparison, trend, anomalies, data quality, std dev, period labels |
-| `test/unit/app/queryrunner` | SQL validation (schema, SELECT-only) |
+| `test/unit/app/llm` | Narrative prompt builder (content, period-comparison reminder, row truncation) |
+| `test/unit/app/queryrunner` | SQL validation (schema, SELECT-only, empty, disallowed keywords) |
 | `test/unit/app/story` | Narrative sanitizer (no fabricated "previous period") |
 | `test/unit/app/service` | Perf suggestions, metrics-to-API conversion |
+| `test/unit/app/suggestions` | Query suggestions (curated, limit) |
 | `test/unit/web` | Report HTML (charts, data quality, perf, narrative sections) |
 | `cmd/server` | Request logging middleware |
+| `pkg/narrative` | Client close, run-query options, validation |
 
-See `test/unit/README.md` in the repository for more detail.
+**Integration tests** (`test/integration/...`, require Docker): query runner; schema + suggestions (catalog and suggester against real Postgres with migrations); reports service List and Get (with a pre-inserted report row). These cover the backend used by the MCP tools (`get_schema`, `get_context`, `suggest_queries`). See [MCP schema, context, and suggestions design](mcp-schema-context-design.md) for manual MCP testing with Cursor or MCP Inspector.
+
+**E2E tests** (`test/e2e/...`, require Docker): full HTTP API against real Postgres. **Queries:** run, save, list saved, get saved by ID, delete saved, then get again (expect 404). **Schema and suggestions:** GET `/api/v1/schema`, GET `/api/v1/suggestions/queries` (curated suggestions). **Reports:** GET `/api/v1/reports` (list), GET `/api/v1/reports/{id}` (get), and GET non-existent report (expect 404); report row is inserted directly so no LLM is required.
 
 ## QA checklist
 
@@ -82,6 +93,8 @@ curl -s "http://localhost:8080/api/v1/reports?limit=5&offset=0"
 
 ## See also
 
-- [API examples](../api/examples.md)
-- [Development setup](setup.md)
-- [Troubleshooting](../reference/troubleshooting.md)
+- [Development setup](setup.md) — Build, commands, workflow
+- [MCP schema, context, and suggestions](mcp-schema-context-design.md) — Manual MCP testing
+- [API examples](../api/examples.md) — Example API calls for QA
+- [Troubleshooting](../reference/troubleshooting.md) — Common issues
+- [Documentation index](../README.md)

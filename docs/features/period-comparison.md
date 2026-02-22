@@ -41,4 +41,10 @@ export PERIOD_TREND_THRESHOLD_PERCENT=1
 make start-local
 ```
 
-**See also:** [Configuration](../configuration.md), [API reference](../api/README.md), [API examples](../api/examples.md)
+## See also
+
+- [Configuration](../configuration.md) — Metrics and period comparison (trend threshold)
+- [API reference](../api/README.md) — Run-query and report response fields
+- [API examples](../api/examples.md) — Example time-series requests
+- [Troubleshooting](../reference/troubleshooting.md) — "Vs previous period" not shown
+- [Documentation index](../README.md)

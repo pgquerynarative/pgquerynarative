@@ -1,0 +1,10 @@
+PgQueryNarrative is installed.
+
+1. Ensure PostgreSQL is available and the database/roles exist (see deployment docs).
+2. Get the application URL:
+{{- if .Values.ingress.enabled }}
+  http{{ if .Values.ingress.tls }}s{{ end }}://{{ .Values.ingress.host }}
+{{- else }}
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ .Release.Name }} 8080:{{ .Values.service.port }}
+  Then open http://localhost:8080
+{{- end }}

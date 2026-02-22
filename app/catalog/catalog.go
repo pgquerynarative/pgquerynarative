@@ -8,7 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	schema "github.com/pgquerynarrative/pgquerynarrative/gen/schema"
+	schema "github.com/pgquerynarrative/pgquerynarrative/api/gen/schema"
 )
 
 // Loader loads schema metadata from the database using the read-only pool.
@@ -25,6 +25,16 @@ func NewLoader(pool *pgxpool.Pool, allowedSchemas []string) *Loader {
 	return &Loader{pool: pool, allowedSchemas: allowedSchemas}
 }
 
+// infoSchemaColumns lists columns from information_schema for allowed schemas.
+// Uses ANY($1) so schema names are parameterized (no string interpolation).
+const infoSchemaColumns = `
+	SELECT table_schema, table_name, column_name, data_type, ordinal_position
+	FROM information_schema.columns
+	WHERE table_schema = ANY($1)
+	  AND table_catalog = current_database()
+	ORDER BY table_schema, table_name, ordinal_position
+`
+
 // Load returns the list of allowed schemas with their tables and columns.
 // It uses the read-only pool so only objects visible to that user are included.
 func (l *Loader) Load(ctx context.Context) (*schema.SchemaResult, error) {
@@ -32,41 +42,48 @@ func (l *Loader) Load(ctx context.Context) (*schema.SchemaResult, error) {
 		return &schema.SchemaResult{Schemas: []*schema.SchemaInfo{}}, nil
 	}
 
-	// Build schema name list for SQL IN clause. We use a safe allowlist.
-	// Columns: table_schema, table_name, column_name, data_type, ordinal_position
-	const q = `
-		SELECT table_schema, table_name, column_name, data_type, ordinal_position
-		FROM information_schema.columns
-		WHERE table_schema = ANY($1)
-		  AND table_catalog = current_database()
-		ORDER BY table_schema, table_name, ordinal_position
-	`
-	rows, err := l.pool.Query(ctx, q, l.allowedSchemas)
+	rows, err := l.pool.Query(ctx, infoSchemaColumns, l.allowedSchemas)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	type row struct {
-		tableSchema string
-		tableName   string
-		columnName  string
-		dataType    string
-		ordPosition int32
+	raw, err := scanColumnRows(rows)
+	if err != nil {
+		return nil, err
 	}
-	var raw []row
+	return buildSchemaResult(l.allowedSchemas, raw), nil
+}
+
+type columnRow struct {
+	tableSchema string
+	tableName   string
+	columnName  string
+	dataType    string
+	ordPosition int32
+}
+
+func scanColumnRows(rows interface {
+	Next() bool
+	Scan(dest ...any) error
+	Err() error
+}) ([]columnRow, error) {
+	var out []columnRow
 	for rows.Next() {
-		var r row
+		var r columnRow
 		if err := rows.Scan(&r.tableSchema, &r.tableName, &r.columnName, &r.dataType, &r.ordPosition); err != nil {
 			return nil, err
 		}
-		raw = append(raw, r)
+		out = append(out, r)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+	return out, nil
+}
 
-	// Group by schema -> table -> columns
+// buildSchemaResult groups column rows by schema and table, preserving allowedSchemas order.
+func buildSchemaResult(allowedSchemas []string, raw []columnRow) *schema.SchemaResult {
 	schemaMap := make(map[string]map[string][]*schema.ColumnInfo)
 	for _, r := range raw {
 		if schemaMap[r.tableSchema] == nil {
@@ -77,7 +94,7 @@ func (l *Loader) Load(ctx context.Context) (*schema.SchemaResult, error) {
 	}
 
 	var schemas []*schema.SchemaInfo
-	for _, name := range l.allowedSchemas {
+	for _, name := range allowedSchemas {
 		tablesMap, ok := schemaMap[name]
 		if !ok {
 			schemas = append(schemas, &schema.SchemaInfo{Name: name, Tables: []*schema.TableInfo{}})
@@ -90,5 +107,5 @@ func (l *Loader) Load(ctx context.Context) (*schema.SchemaResult, error) {
 		sort.Slice(tables, func(i, j int) bool { return tables[i].Name < tables[j].Name })
 		schemas = append(schemas, &schema.SchemaInfo{Name: name, Tables: tables})
 	}
-	return &schema.SchemaResult{Schemas: schemas}, nil
+	return &schema.SchemaResult{Schemas: schemas}
 }

@@ -180,3 +180,11 @@ Relevant packages: `test/unit/app/catalog`, `test/unit/app/suggestions`.
 - Query validator allowed schemas: `app/queryrunner/validator.go`
 - Demo schema: `app/db/migrations/000003_create_demo_schema.up.sql`
 - STATUS: `docs/project/STATUS.md` (Phase 5 – MCP schema tools, query suggestions, context retrieval)
+
+## See also
+
+- [Testing](testing.md) — Unit and integration tests (catalog, suggestions)
+- [LLM setup](../getting-started/llm-setup.md) — MCP client configuration (Cursor, Claude desktop)
+- [Configuration](../configuration.md) — MCP and API URL
+- [API reference](../api/README.md) — Schema and suggestions endpoints
+- [Documentation index](../README.md)

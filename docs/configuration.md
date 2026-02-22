@@ -176,4 +176,13 @@ WantedBy=multi-user.target
 
 Config is validated on startup; invalid values cause clear startup errors. If config does not apply: check `env | grep PGQUERYNARRATIVE`, `.env` format, or Compose `environment`. For other issues see [Troubleshooting](reference/troubleshooting.md).
 
-**See also:** [Installation](getting-started/installation.md), [Troubleshooting](reference/troubleshooting.md), [Period comparison](features/period-comparison.md)
+## See also
+
+- [Installation](getting-started/installation.md) — Prerequisites and run methods
+- [Quick start](getting-started/quickstart.md) — Minimal run steps
+- [Deployment](reference/deployment.md) — Docker, Kubernetes, Helm
+- [API reference](api/README.md) — REST endpoints and request/response
+- [Embedded integration](getting-started/embedded.md) — Library and middleware config
+- [Period comparison](features/period-comparison.md) — Trend threshold and usage
+- [Troubleshooting](reference/troubleshooting.md) — Common issues
+- [Documentation index](README.md)

@@ -22,75 +22,36 @@ import (
 	suggestionsServer "github.com/pgquerynarrative/pgquerynarrative/api/gen/http/suggestions/server"
 	"github.com/pgquerynarrative/pgquerynarrative/api/gen/queries"
 	"github.com/pgquerynarrative/pgquerynarrative/api/gen/reports"
-	"github.com/pgquerynarrative/pgquerynarrative/app/catalog"
+	schema "github.com/pgquerynarrative/pgquerynarrative/api/gen/schema"
+	suggestions "github.com/pgquerynarrative/pgquerynarrative/api/gen/suggestions"
 	"github.com/pgquerynarrative/pgquerynarrative/app/config"
-	"github.com/pgquerynarrative/pgquerynarrative/app/db"
-	"github.com/pgquerynarrative/pgquerynarrative/app/llm"
-	"github.com/pgquerynarrative/pgquerynarrative/app/queryrunner"
-	"github.com/pgquerynarrative/pgquerynarrative/app/service"
-	pkgsuggestions "github.com/pgquerynarrative/pgquerynarrative/app/suggestions"
-	schema "github.com/pgquerynarrative/pgquerynarrative/gen/schema"
-	suggestions "github.com/pgquerynarrative/pgquerynarrative/gen/suggestions"
+	"github.com/pgquerynarrative/pgquerynarrative/pkg/narrative"
 	"github.com/pgquerynarrative/pgquerynarrative/web"
 	goahttp "goa.design/goa/v3/http"
 )
 
-// main is the application entry point. It:
-// 1. Loads configuration from environment variables
-// 2. Sets up database connection pools (read-only and app)
-// 3. Initializes query runner and validator
-// 4. Sets up LLM client for narrative generation
-// 5. Creates service layer (queries and reports)
-// 6. Configures HTTP server with API and web UI routes
-// 7. Starts the server with graceful shutdown handling
-func main() {
-	// Load configuration from environment variables
-	cfg := config.Load()
+const gracefulTimeout = 10 * time.Second
 
-	// Set up graceful shutdown context
+// main is the application entry point. It loads config, creates the narrative
+// client (which owns DB pools, runner, LLM, and services), wires Goa endpoints
+// and web UI to that client, and runs the HTTP server with graceful shutdown.
+func main() {
+	cfg := config.Load()
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	// Initialize database connection pools
-	// ReadOnly pool: for executing queries (least privilege)
-	// App pool: for saving queries and reports (full access)
-	pools, err := db.NewPools(ctx, cfg.Database)
+	client, err := narrative.NewClient(ctx, narrative.FromAppConfig(cfg))
 	if err != nil {
-		log.Fatalf("failed to create database pools: %v", err)
+		log.Fatalf("failed to create narrative client: %v", err)
 	}
-	defer pools.Close()
+	defer client.Close()
 
-	// Initialize query validator and runner
-	// Validator ensures queries are safe (read-only, allowed schemas only)
-	// Runner executes queries with timeout protection
-	validator := queryrunner.NewValidator([]string{"demo"}, 10000)
-	runner := queryrunner.NewRunner(
-		pools.ReadOnly,
-		validator,
-		1000, // max rows per query
-		cfg.Database.QueryTimeout,
-	)
-
-	// Initialize LLM client for narrative generation
-	llmClient := initializeLLMClient(cfg.LLM)
-
-	// Create service layer
-	// QueriesService: handles query execution and saved queries
-	// ReportsService: handles report generation with narrative
-	queriesService := service.NewQueriesService(pools.ReadOnly, pools.App, runner, cfg.Metrics.TrendThresholdPercent)
-	reportsService := service.NewReportsService(pools.ReadOnly, pools.App, runner, llmClient, cfg.Metrics.TrendThresholdPercent)
-	catalogLoader := catalog.NewLoader(pools.ReadOnly, []string{"demo"})
-	schemaService := service.NewSchemaService(catalogLoader)
-	suggester := pkgsuggestions.NewSuggester(pools.App)
-
-	// Set up logging
 	logger := log.New(os.Stdout, "[pgquerynarrative] ", log.LstdFlags)
 
-	// Create Goa endpoints from services
-	queriesEndpoints := queries.NewEndpoints(queriesService)
-	reportsEndpoints := reports.NewEndpoints(reportsService)
-	schemaEndpoints := schema.NewEndpoints(schemaService)
-	suggestionsEndpoints := suggestions.NewEndpoints(suggester)
+	queriesEndpoints := queries.NewEndpoints(client.QueriesService())
+	reportsEndpoints := reports.NewEndpoints(client.ReportsService())
+	schemaEndpoints := schema.NewEndpoints(client.SchemaService())
+	suggestionsEndpoints := suggestions.NewEndpoints(client.SuggestionsService())
 
 	// Configure HTTP server
 	httpServer := setupHTTPServer(cfg, queriesEndpoints, reportsEndpoints, schemaEndpoints, suggestionsEndpoints, logger)
@@ -107,33 +68,13 @@ func main() {
 	<-ctx.Done()
 	logger.Println("🛑 Shutting down server...")
 
-	// Graceful shutdown with timeout
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), gracefulTimeout)
 	defer cancel()
 
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		logger.Printf("shutdown error: %v", err)
 	} else {
 		logger.Println("✅ Server stopped gracefully")
-	}
-}
-
-// initializeLLMClient creates an LLM client based on configuration.
-// Supports Ollama (local), Gemini, Claude, OpenAI (GPT), Groq. Set LLM_PROVIDER and LLM_API_KEY for cloud providers.
-func initializeLLMClient(cfg config.LLMConfig) llm.Client {
-	switch cfg.Provider {
-	case "ollama":
-		return llm.NewOllamaClient(cfg.BaseURL, cfg.Model)
-	case "gemini":
-		return llm.NewGeminiClient(cfg.APIKey, cfg.Model)
-	case "claude":
-		return llm.NewClaudeClient(cfg.APIKey, cfg.Model)
-	case "openai":
-		return llm.NewOpenAIClient(cfg.APIKey, cfg.Model)
-	case "groq":
-		return llm.NewGroqClient(cfg.APIKey, cfg.Model)
-	default:
-		return llm.NewOllamaClient(cfg.BaseURL, cfg.Model)
 	}
 }
 

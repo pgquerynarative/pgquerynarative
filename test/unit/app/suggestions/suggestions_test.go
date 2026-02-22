@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	suggestionsgen "github.com/pgquerynarrative/pgquerynarrative/api/gen/suggestions"
 	"github.com/pgquerynarrative/pgquerynarrative/app/suggestions"
-	suggestionsgen "github.com/pgquerynarrative/pgquerynarrative/gen/suggestions"
 )
 
 func TestQueries_EmptyIntent_ReturnsCuratedOnly(t *testing.T) {

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgquerynarrative-config
+  namespace: pgquerynarrative
+  labels:
+    app.kubernetes.io/name: pgquerynarrative
+data:
+  PGQUERYNARRATIVE_HOST: "0.0.0.0"
+  PGQUERYNARRATIVE_PORT: "8080"
+  DATABASE_HOST: "postgres"          # override if using external DB
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "pgquerynarrative"
+  DATABASE_USER: "pgquerynarrative_app"
+  DATABASE_SSL_MODE: "disable"
+  DATABASE_MAX_CONNECTIONS: "5"
+  DATABASE_READONLY_USER: "pgquerynarrative_readonly"
+  LLM_PROVIDER: "ollama"
+  LLM_MODEL: "llama3.2"
+  LLM_BASE_URL: "http://host.docker.internal:11434"  # or your LLM endpoint

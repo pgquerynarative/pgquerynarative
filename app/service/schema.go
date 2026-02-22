@@ -4,7 +4,7 @@ package service
 import (
 	"context"
 
-	schema "github.com/pgquerynarrative/pgquerynarrative/gen/schema"
+	schema "github.com/pgquerynarrative/pgquerynarrative/api/gen/schema"
 
 	"github.com/pgquerynarrative/pgquerynarrative/app/catalog"
 )

@@ -132,4 +132,52 @@ func TestQueriesE2E(t *testing.T) {
 	if saved.ID == "" {
 		t.Fatalf("expected saved query ID")
 	}
+
+	// List saved queries — should include the one we just saved
+	listResp, err := http.Get(testServer.URL + "/api/v1/queries/saved")
+	if err != nil {
+		t.Fatalf("list saved request failed: %v", err)
+	}
+	listResp.Body.Close()
+	if listResp.StatusCode != http.StatusOK {
+		t.Fatalf("list saved unexpected status: %d", listResp.StatusCode)
+	}
+
+	// Get saved query by ID
+	getResp, err := http.Get(testServer.URL + "/api/v1/queries/saved/" + saved.ID)
+	if err != nil {
+		t.Fatalf("get saved request failed: %v", err)
+	}
+	defer getResp.Body.Close()
+	if getResp.StatusCode != http.StatusOK {
+		t.Fatalf("get saved unexpected status: %d", getResp.StatusCode)
+	}
+	var got queries.SavedQuery
+	if err := json.NewDecoder(getResp.Body).Decode(&got); err != nil {
+		t.Fatalf("failed to decode get saved response: %v", err)
+	}
+	if got.ID != saved.ID || got.SQL != saved.SQL {
+		t.Errorf("get saved: id=%q sql=%q, want id=%q sql=%q", got.ID, got.SQL, saved.ID, saved.SQL)
+	}
+
+	// Delete saved query
+	delReq, _ := http.NewRequest(http.MethodDelete, testServer.URL+"/api/v1/queries/saved/"+saved.ID, nil)
+	delResp, err := http.DefaultClient.Do(delReq)
+	if err != nil {
+		t.Fatalf("delete saved request failed: %v", err)
+	}
+	delResp.Body.Close()
+	if delResp.StatusCode != http.StatusOK {
+		t.Fatalf("delete saved unexpected status: %d", delResp.StatusCode)
+	}
+
+	// Get again should 404
+	getAgain, err := http.Get(testServer.URL + "/api/v1/queries/saved/" + saved.ID)
+	if err != nil {
+		t.Fatalf("get after delete request failed: %v", err)
+	}
+	getAgain.Body.Close()
+	if getAgain.StatusCode != http.StatusNotFound {
+		t.Errorf("get after delete: want 404, got %d", getAgain.StatusCode)
+	}
 }

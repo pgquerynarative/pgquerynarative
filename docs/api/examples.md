@@ -64,4 +64,11 @@ curl -s http://localhost:8080/api/v1/reports/REPORT_UUID | jq .
 curl -s "http://localhost:8080/api/v1/reports?limit=5&offset=0" | jq '.items[] | {id, created_at}'
 ```
 
-**See also:** [API reference](README.md), [Configuration](../configuration.md), [Period comparison](../features/period-comparison.md)
+## See also
+
+- [API reference](README.md) — Full endpoint list and error codes
+- [LLM setup](../getting-started/llm-setup.md) — Required for report generation
+- [Configuration](../configuration.md) — Base URL and LLM variables
+- [Quick start](../getting-started/quickstart.md) — Get the app running first
+- [Period comparison](../features/period-comparison.md) — Time-series and run-query response
+- [Documentation index](../README.md)

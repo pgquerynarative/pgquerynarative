@@ -1,0 +1,25 @@
+# Optional: expose the app via Ingress. Adjust ingressClassName and host for your cluster.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pgquerynarrative
+  namespace: pgquerynarrative
+  labels:
+    app.kubernetes.io/name: pgquerynarrative
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: pgquerynarrative.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pgquerynarrative
+                port:
+                  number: 8080
+  # tls:
+  #   - hosts:
+  #       - pgquerynarrative.local
+  #     secretName: pgquerynarrative-tls

@@ -1,6 +1,7 @@
 #!/bin/sh
-# Re-insert ValidateMetricsDataResponseBody into gen/http/reports/client/types.go after goa gen.
+# Patch gen/ before copy: add ValidateMetricsDataResponseBody to gen/http/reports/client/types.go.
 # Goa does not emit this validator for MetricsDataResponseBody; the generated code calls it.
+# copy-gen-to-api-gen.sh then copies the patched file into api/gen/.
 set -e
 FILE="gen/http/reports/client/types.go"
 [ -f "$FILE" ] || exit 0

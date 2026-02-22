@@ -1,6 +1,6 @@
 # PostgreSQL extension
 
-Call PgQueryNarrative from SQL: run queries, generate reports, and list saved queries. Requires the PgQueryNarrative service to be running and PostgreSQL 12+.
+Call PgQueryNarrative from SQL: run queries, generate reports, and list saved queries. Requires the PgQueryNarrative service to be running and PostgreSQL 12+. Extension files live in `infra/postgres-extension/`. See this doc for install and usage.
 
 ## Install
 
@@ -50,5 +50,8 @@ SELECT pgquerynarrative_generate_report(
 
 ## See also
 
-- [API reference](../api/README.md)
-- [Configuration](../configuration.md)
+- [API reference](../api/README.md) — REST endpoints called by the extension
+- [Configuration](../configuration.md) — Server and database config
+- [Deployment](deployment.md) — Running the service (Docker, Kubernetes, Helm)
+- [Troubleshooting](troubleshooting.md) — Common issues
+- [Documentation index](../README.md)

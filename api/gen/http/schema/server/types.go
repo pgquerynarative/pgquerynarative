@@ -8,7 +8,7 @@
 package server
 
 import (
-	schema "github.com/pgquerynarrative/pgquerynarrative/gen/schema"
+	schema "github.com/pgquerynarrative/pgquerynarrative/api/gen/schema"
 )
 
 // GetResponseBody is the type of the "schema" service "get" endpoint HTTP

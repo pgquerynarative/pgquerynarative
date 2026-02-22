@@ -12,7 +12,7 @@ cd pgquerynarrative
 make start-docker
 ```
 
-App: `http://localhost:8080`
+This uses the root `docker-compose.yml` (PostgreSQL + app from root `Dockerfile`). App: `http://localhost:8080`. For a production-style image and compose, see [Deployment](../reference/deployment.md).
 
 ## Local PostgreSQL
 
@@ -29,4 +29,12 @@ make start-local
 - **CLI:** `make cli CMD='query "SELECT * FROM demo.sales LIMIT 5"'` ([CLI usage](../usage/cli-usage.md))
 - **API:** [API examples](../api/examples.md)
 
-**See also:** [Installation](installation.md), [LLM setup](llm-setup.md) (reports, MCP), [Troubleshooting](../reference/troubleshooting.md), [Documentation index](../README.md)
+## See also
+
+- [Installation](installation.md) — Prerequisites and detailed setup
+- [LLM setup](llm-setup.md) — Report generation and MCP
+- [Configuration](../configuration.md) — Environment variables
+- [Deployment](../reference/deployment.md) — Docker build/compose, Kubernetes, Helm
+- [API examples](../api/examples.md) — cURL for queries and reports
+- [Troubleshooting](../reference/troubleshooting.md) — Common issues
+- [Documentation index](../README.md)

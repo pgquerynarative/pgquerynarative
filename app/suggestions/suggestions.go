@@ -8,7 +8,13 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	suggestions "github.com/pgquerynarrative/pgquerynarrative/gen/suggestions"
+	suggestions "github.com/pgquerynarrative/pgquerynarrative/api/gen/suggestions"
+)
+
+const (
+	defaultLimit          = 5
+	maxLimit              = 20
+	descriptionTruncateAt = 60
 )
 
 // Curated example queries for the demo schema (demo.sales).
@@ -45,13 +51,7 @@ func NewSuggester(appPool *pgxpool.Pool) *Suggester {
 // Queries implements the suggestions service: returns curated examples plus
 // saved queries matching the optional intent, up to limit.
 func (s *Suggester) Queries(ctx context.Context, payload *suggestions.QueriesPayload) (*suggestions.SuggestedQueriesResult, error) {
-	limit := int(payload.Limit)
-	if limit < 1 {
-		limit = 5
-	}
-	if limit > 20 {
-		limit = 20
-	}
+	limit := clampLimit(int(payload.Limit), defaultLimit, maxLimit)
 
 	var out []*suggestions.QuerySuggestion
 
@@ -114,7 +114,7 @@ func (s *Suggester) matchSavedQueries(ctx context.Context, intent string, max in
 		}
 		title := name
 		if desc != "" {
-			title = name + ": " + truncate(desc, 60)
+			title = name + ": " + truncate(desc, descriptionTruncateAt)
 		}
 		result = append(result, &suggestions.QuerySuggestion{
 			SQL:    sql,
@@ -125,9 +125,19 @@ func (s *Suggester) matchSavedQueries(ctx context.Context, intent string, max in
 	return result, rows.Err()
 }
 
-func truncate(s string, max int) string {
-	if len(s) <= max {
+func clampLimit(value, defaultVal, max int) int {
+	if value < 1 {
+		return defaultVal
+	}
+	if value > max {
+		return max
+	}
+	return value
+}
+
+func truncate(s string, maxLen int) string {
+	if len(s) <= maxLen {
 		return s
 	}
-	return s[:max-3] + "..."
+	return s[:maxLen-3] + "..."
 }

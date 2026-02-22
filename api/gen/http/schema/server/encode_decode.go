@@ -11,7 +11,7 @@ import (
 	"context"
 	"net/http"
 
-	schema "github.com/pgquerynarrative/pgquerynarrative/gen/schema"
+	schema "github.com/pgquerynarrative/pgquerynarrative/api/gen/schema"
 	goahttp "goa.design/goa/v3/http"
 )
 

@@ -8,7 +8,7 @@
 package client
 
 import (
-	schema "github.com/pgquerynarrative/pgquerynarrative/gen/schema"
+	schema "github.com/pgquerynarrative/pgquerynarrative/api/gen/schema"
 	goa "goa.design/goa/v3/pkg"
 )
 

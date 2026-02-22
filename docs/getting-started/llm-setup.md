@@ -45,4 +45,11 @@ Use PgQueryNarrative as tools (run query, generate report, list saved/reports) f
 - **Report fails / timeout:** Check provider and API key; for Ollama see above. [Troubleshooting](../reference/troubleshooting.md).
 - **Slow (Ollama):** Smaller model (e.g. `mistral`), more RAM; first run per session is slower.
 
-**See also:** [Configuration](../configuration.md), [Quick start](quickstart.md), [Troubleshooting](../reference/troubleshooting.md)
+## See also
+
+- [Configuration](../configuration.md) — All LLM and MCP variables
+- [Quick start](quickstart.md) — Get the app running
+- [Deployment](../reference/deployment.md) — Docker/Helm (e.g. LLM_BASE_URL in containers)
+- [Embedded integration](embedded.md) — Library and middleware (same config)
+- [Troubleshooting](../reference/troubleshooting.md) — Report and connection issues
+- [Documentation index](../README.md)

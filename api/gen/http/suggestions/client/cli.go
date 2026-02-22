@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"strconv"
 
-	suggestions "github.com/pgquerynarrative/pgquerynarrative/gen/suggestions"
+	suggestions "github.com/pgquerynarrative/pgquerynarrative/api/gen/suggestions"
 	goa "goa.design/goa/v3/pkg"
 )
 

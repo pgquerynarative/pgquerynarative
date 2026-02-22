@@ -1,0 +1,59 @@
+# Default values for pgquerynarrative.
+# Override when installing: helm install pgqn ./deploy/helm/pgquerynarrative -f my-values.yaml
+
+replicaCount: 1
+
+image:
+  repository: pgquerynarrative
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Database: point to your Postgres (in-cluster or external)
+database:
+  host: postgres
+  port: "5432"
+  name: pgquerynarrative
+  user: pgquerynarrative_app
+  sslMode: disable
+  maxConnections: 5
+  readonlyUser: pgquerynarrative_readonly
+
+# Secrets: set via --set or a values file; do not commit real passwords
+secret:
+  databasePassword: changeme
+  databaseReadonlyPassword: changeme
+
+# LLM for report generation
+llm:
+  provider: ollama
+  model: llama3.2
+  baseURL: http://host.docker.internal:11434
+  # apiKey: ""  # for OpenAI, Groq, etc.
+
+server:
+  host: "0.0.0.0"
+  port: "8080"
+
+resources:
+  requests:
+    memory: 128Mi
+    cpu: 50m
+  limits:
+    memory: 256Mi
+    cpu: 500m
+
+# Optional: seed demo data on first run
+seed: false
+
+# Ingress: set enabled true and set host to expose via Ingress
+ingress:
+  enabled: false
+  className: nginx
+  host: pgquerynarrative.local
+  # tls:
+  #   enabled: false
+  #   secretName: pgquerynarrative-tls
+
+service:
+  type: ClusterIP
+  port: 8080

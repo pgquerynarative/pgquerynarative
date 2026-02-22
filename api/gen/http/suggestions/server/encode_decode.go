@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"strconv"
 
-	suggestions "github.com/pgquerynarrative/pgquerynarrative/gen/suggestions"
+	suggestions "github.com/pgquerynarrative/pgquerynarrative/api/gen/suggestions"
 	goahttp "goa.design/goa/v3/http"
 	goa "goa.design/goa/v3/pkg"
 )

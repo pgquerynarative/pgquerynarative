@@ -8,7 +8,7 @@
 package server
 
 import (
-	suggestions "github.com/pgquerynarrative/pgquerynarrative/gen/suggestions"
+	suggestions "github.com/pgquerynarrative/pgquerynarrative/api/gen/suggestions"
 )
 
 // QueriesResponseBody is the type of the "suggestions" service "queries"

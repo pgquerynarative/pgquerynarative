@@ -1,4 +1,4 @@
-.PHONY: setup tidy generate build build-mcp run test test-unit test-integration test-e2e lint fmt migrate seed dev dev-stop dev-watch dev-build dev-teardown docker-up docker-down docker-logs db-init start start-docker start-local stop cli cli-shell changelog
+.PHONY: setup tidy generate build build-mcp run test test-unit test-features test-integration test-e2e lint fmt migrate seed dev dev-stop dev-watch dev-build dev-teardown docker-up docker-down docker-logs db-init start start-docker start-local stop cli cli-shell changelog
 
 GO ?= go
 GOLANGCI_LINT ?= golangci-lint
@@ -135,6 +135,7 @@ setup:
 tidy:
 	$(GO) mod tidy
 
+# Generate: goa -> gen/ (ephemeral), then patch and sync to api/gen/ (committed). App imports only api/gen/.
 generate:
 	@echo "🔧 Generating API code..."
 	@if ! command -v goa >/dev/null 2>&1; then \
@@ -168,16 +169,14 @@ test: test-unit test-integration
 
 test-unit:
 	@echo "🧪 Running unit tests..."
-	$(GO) test ./test/unit/... ./cmd/server/... -v
+	$(GO) test ./test/unit/... ./cmd/server/... ./pkg/narrative/... -v
 
 # No-op target so "make test-unit # comment" does not fail when shell passes # as a target.
 \#:
 	@true
 
-# Run feature tests only (no integration). Use -run <TestName> to run a single test.
-test-features:
-	@echo "🧪 Running feature tests..."
-	$(GO) test ./test/unit/... -v
+# Alias for test-unit (same scope: unit + cmd/server). Use "make test-unit -run <TestName>" for a single test.
+test-features: test-unit
 
 test-integration:
 	@echo "🧪 Running integration tests..."
@@ -309,4 +308,4 @@ install-extension-docker:
 	@echo "📦 Installing PgQueryNarrative extension in Docker PostgreSQL..."
 	@docker compose exec postgres psql -U postgres -d pgquerynarrative -f /docker-entrypoint-initdb.d/extension/pgquerynarrative--1.0.sql || \
 		docker compose exec postgres psql -U pgquerynarrative_app -d pgquerynarrative -f /docker-entrypoint-initdb.d/extension/pgquerynarrative--1.0.sql || \
-		echo "⚠ Extension installation requires manual setup. See infra/postgres-extension/README.md"
+		echo "⚠ Extension installation requires manual setup. See docs/reference/postgres-extension.md"

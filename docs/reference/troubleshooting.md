@@ -33,6 +33,10 @@ Common issues and how to resolve them.
 
 ## See also
 
-- [Configuration](../configuration.md)
-- [Installation](../getting-started/installation.md)
-- [LLM setup](../getting-started/llm-setup.md)
+- [Configuration](../configuration.md) — Environment variables
+- [Installation](../getting-started/installation.md) — Prerequisites and setup
+- [Quick start](../getting-started/quickstart.md) — Minimal run steps
+- [LLM setup](../getting-started/llm-setup.md) — Report generation and MCP
+- [Deployment](deployment.md) — Docker, Kubernetes, Helm
+- [Operations](operations.md) — Monitoring and runbooks
+- [Documentation index](../README.md)
