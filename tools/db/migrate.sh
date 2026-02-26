@@ -4,26 +4,35 @@ set -e
 CMD="${1:-up}"
 DB_URL="${2:-}"
 
-if [ -z "$DB_URL" ]; then
-  echo "Usage: ./tools/db/migrate.sh up|down|version <database_url>"
-  exit 1
-fi
-
 MIGRATE_PKG="github.com/golang-migrate/migrate/v4/cmd/migrate@latest"
 
 case "$CMD" in
   up)
+    if [ -z "$DB_URL" ]; then echo "Usage: ./tools/db/migrate.sh up <database_url>"; exit 1; fi
     go run -tags 'postgres' "$MIGRATE_PKG" -path ./app/db/migrations -database "$DB_URL" up
     ;;
   down)
+    if [ -z "$DB_URL" ]; then echo "Usage: ./tools/db/migrate.sh down <database_url>"; exit 1; fi
     go run -tags 'postgres' "$MIGRATE_PKG" -path ./app/db/migrations -database "$DB_URL" down
     ;;
   version)
+    if [ -z "$DB_URL" ]; then echo "Usage: ./tools/db/migrate.sh version <database_url>"; exit 1; fi
     go run -tags 'postgres' "$MIGRATE_PKG" -path ./app/db/migrations -database "$DB_URL" version
+    ;;
+  force)
+    VERSION="${2:-}"
+    DB_URL="${3:-}"
+    if [ -z "$VERSION" ] || [ -z "$DB_URL" ]; then
+      echo "Usage: ./tools/db/migrate.sh force <version> <database_url>"
+      echo "  Use after a failed migration to set schema version (e.g. force 6 then run up again)."
+      exit 1
+    fi
+    go run -tags 'postgres' "$MIGRATE_PKG" -path ./app/db/migrations -database "$DB_URL" force "$VERSION"
     ;;
   *)
     echo "Unknown command: $CMD"
-    echo "Usage: ./tools/db/migrate.sh up|down|version <database_url>"
+    echo "Usage: ./tools/db/migrate.sh up|down|version|force <database_url>"
+    echo "  force: ./tools/db/migrate.sh force <version> <database_url>"
     exit 1
     ;;
 esac

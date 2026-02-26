@@ -4,9 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+// EmbeddingVectorDimension is the size used for pgvector (e.g. nomic-embed-text).
+const EmbeddingVectorDimension = 768
 
 // SimilarQuery holds a saved query and its similarity score (0–1, higher is more similar).
 type SimilarQuery struct {
@@ -32,29 +37,87 @@ func NewStore(appPool *pgxpool.Pool) *Store {
 	return &Store{appPool: appPool}
 }
 
-// Upsert saves or replaces the embedding for a saved query. Embedding is stored as JSONB.
+// Upsert saves or replaces the embedding for a saved query. Stores JSONB and, when
+// pgvector is available, a native vector column for in-database semantic search.
 func (s *Store) Upsert(ctx context.Context, savedQueryID string, embedding []float32, model string) error {
 	raw, err := json.Marshal(embedding)
 	if err != nil {
 		return fmt.Errorf("marshal embedding: %w", err)
 	}
+	vectorLiteral := formatVectorForPG(embedding)
 	_, err = s.appPool.Exec(ctx, `
-		INSERT INTO app.query_embeddings (saved_query_id, embedding, model, updated_at)
-		VALUES ($1::uuid, $2::jsonb, $3, NOW())
-		ON CONFLICT (saved_query_id) DO UPDATE SET embedding = EXCLUDED.embedding, model = EXCLUDED.model, updated_at = NOW()
-	`, savedQueryID, raw, model)
+		INSERT INTO app.query_embeddings (saved_query_id, embedding, model, updated_at, embedding_vector)
+		VALUES ($1::uuid, $2::jsonb, $3, NOW(), $4::vector(768))
+		ON CONFLICT (saved_query_id) DO UPDATE SET
+			embedding = EXCLUDED.embedding,
+			model = EXCLUDED.model,
+			updated_at = NOW(),
+			embedding_vector = EXCLUDED.embedding_vector
+	`, savedQueryID, raw, model, vectorLiteral)
 	if err != nil {
-		return fmt.Errorf("upsert embedding: %w", err)
+		// Fallback when pgvector column or extension is missing
+		_, fallbackErr := s.appPool.Exec(ctx, `
+			INSERT INTO app.query_embeddings (saved_query_id, embedding, model, updated_at)
+			VALUES ($1::uuid, $2::jsonb, $3, NOW())
+			ON CONFLICT (saved_query_id) DO UPDATE SET embedding = EXCLUDED.embedding, model = EXCLUDED.model, updated_at = NOW()
+		`, savedQueryID, raw, model)
+		if fallbackErr != nil {
+			return fmt.Errorf("upsert embedding: %w", fallbackErr)
+		}
 	}
 	return nil
 }
 
+// formatVectorForPG returns a PostgreSQL vector literal "[a,b,c,...]" for pgvector.
+func formatVectorForPG(v []float32) string {
+	if len(v) == 0 {
+		return "[]"
+	}
+	b := make([]string, len(v))
+	for i := range v {
+		b[i] = fmt.Sprintf("%g", v[i])
+	}
+	return "[" + strings.Join(b, ",") + "]"
+}
+
 // FindSimilar returns saved queries most similar to the given embedding (cosine similarity).
-// Loads all stored embeddings and ranks in memory; limit is the max number to return.
+// Uses pgvector for in-database search when available; otherwise falls back to in-memory ranking.
 func (s *Store) FindSimilar(ctx context.Context, queryEmbedding []float32, limit int) ([]SimilarQuery, error) {
 	if limit <= 0 {
 		limit = 5
 	}
+	// Try pgvector path first (in-database semantic search)
+	vectorLiteral := formatVectorForPG(queryEmbedding)
+	rows, err := s.appPool.Query(ctx, `
+		SELECT qe.saved_query_id::text, sq.name, sq.sql, COALESCE(sq.description, ''),
+		       (1 - (qe.embedding_vector <=> $1::vector(768))) AS score
+		FROM app.query_embeddings qe
+		JOIN app.saved_queries sq ON sq.id = qe.saved_query_id
+		WHERE qe.embedding_vector IS NOT NULL
+		ORDER BY qe.embedding_vector <=> $1::vector(768)
+		LIMIT $2
+	`, vectorLiteral, limit)
+	if err == nil {
+		defer rows.Close()
+		return scanSimilarRows(rows)
+	}
+	// Fallback: load all and rank in memory
+	return s.findSimilarInMemory(ctx, queryEmbedding, limit)
+}
+
+func scanSimilarRows(rows pgx.Rows) ([]SimilarQuery, error) {
+	var out []SimilarQuery
+	for rows.Next() {
+		var sim SimilarQuery
+		if err := rows.Scan(&sim.SavedQueryID, &sim.Name, &sim.SQL, &sim.Description, &sim.Score); err != nil {
+			return nil, err
+		}
+		out = append(out, sim)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) findSimilarInMemory(ctx context.Context, queryEmbedding []float32, limit int) ([]SimilarQuery, error) {
 	rows, err := s.appPool.Query(ctx, `
 		SELECT qe.saved_query_id::text, qe.embedding, sq.name, sq.sql, COALESCE(sq.description, '')
 		FROM app.query_embeddings qe
@@ -84,7 +147,6 @@ func (s *Store) FindSimilar(ctx context.Context, queryEmbedding []float32, limit
 		return nil, err
 	}
 
-	// Cosine similarity: score = dot(a,b) when vectors are L2-normalized (Ollama returns normalized).
 	queryNorm := norm(queryEmbedding)
 	if queryNorm == 0 {
 		return nil, nil
@@ -107,7 +169,6 @@ func (s *Store) FindSimilar(ctx context.Context, queryEmbedding []float32, limit
 			score: score,
 		})
 	}
-	// Sort by score descending and take top limit
 	sortByScoreDesc(scoredList)
 	out := make([]SimilarQuery, 0, limit)
 	for i := 0; i < len(scoredList) && i < limit; i++ {

@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Go 1.24+, PostgreSQL 16+ (or Docker), Git, Make
+Go 1.24+, PostgreSQL 16+ (or Docker), Git, Make.
 
 ## Setup
 
@@ -13,7 +13,7 @@ make setup
 make generate
 ```
 
-**Database:** Docker: `docker compose up -d postgres` then `make db-init && make migrate && make seed`. Local: `make db-init && make migrate && make seed` (Postgres running).
+**Database:** Docker: `docker compose up -d postgres` then `make db-init && make migrate && make seed`. Local: same (Postgres running).
 
 **Test:** `make test`
 
@@ -25,7 +25,7 @@ make run
 go run ./cmd/server
 ```
 
-App: `http://localhost:8080`. Verbose logging: `LOG_DEBUG=1 make run`.
+App: http://localhost:8080. Verbose: `LOG_DEBUG=1 make run`.
 
 ## Workflow
 
@@ -49,7 +49,7 @@ App: `http://localhost:8080`. Verbose logging: `LOG_DEBUG=1 make run`.
 
 ## See also
 
-- [Testing](testing.md) — Unit, integration, and E2E tests
+- [Testing](testing.md) — Unit, integration, E2E
 - [Troubleshooting](../reference/troubleshooting.md) — Common issues
 - [Deployment](../reference/deployment.md) — Docker build and run
 - [Documentation index](../README.md)

@@ -1,6 +1,6 @@
 # CLI usage
 
-Command-line access to the API. The app must be running (`make start-docker` or `make start-local`). The CLI runs inside a container when using Docker, or on the host when using a local binary.
+Command-line access to the API. The app must be running (`make start-docker` or `make start-local`). CLI runs in a container (Docker) or on the host (local binary).
 
 ## Commands
 
@@ -22,21 +22,21 @@ make cli CMD='save "Top Products" "SELECT product_category, SUM(total_amount) FR
 make cli CMD='report "SELECT product_category, SUM(total_amount) FROM demo.sales GROUP BY product_category"'
 ```
 
-## Environment (CLI container)
+## Environment (CLI)
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PGQUERYNARRATIVE_API_URL` | `http://app:8080` | API base URL (use `http://localhost:8080` when CLI runs on host) |
+| `PGQUERYNARRATIVE_API_URL` | `http://app:8080` | API base URL (use `http://localhost:8080` when CLI on host) |
 | `PGQUERYNARRATIVE_FORMAT` | `table` | Output: `table` or `json` |
 
-JSON output: `docker compose run --rm -e PGQUERYNARRATIVE_FORMAT=json cli pgquerynarrative query "SELECT 1"`.
+JSON output: `make cli CMD='query "SELECT 1"'` with `PGQUERYNARRATIVE_FORMAT=json` (when running CLI on host).
 
-**Quoting:** Quote SQL in the outer command: `make cli CMD='query "SELECT * FROM demo.sales"'`. For SQL with single quotes escape: `'\''`.
+**Quoting:** Quote SQL in the outer command: `make cli CMD='query "SELECT * FROM demo.sales"'`. For single quotes in SQL: `'\''`.
 
 ## See also
 
-- [API examples](../api/examples.md) — cURL equivalents for CLI commands
+- [API examples](../api/examples.md) — cURL equivalents
 - [API reference](../api/README.md) — REST endpoints
-- [Quick start](../getting-started/quickstart.md) — Start the app (required for CLI)
+- [Quick start](../getting-started/quickstart.md) — Start the app
 - [Troubleshooting](../reference/troubleshooting.md) — Common issues
 - [Documentation index](../README.md)

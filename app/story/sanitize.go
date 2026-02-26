@@ -55,9 +55,7 @@ func stripPeriodComparisonPhrases(s string) string {
 	}
 	s = strings.TrimSpace(s)
 	s = regexp.MustCompile(`\s+`).ReplaceAllString(s, " ")
-	if strings.HasSuffix(s, ", ") {
-		s = strings.TrimSuffix(s, ", ")
-	}
+	s = strings.TrimSuffix(s, ", ")
 	return s
 }
 

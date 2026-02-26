@@ -1,26 +1,22 @@
-<p align="center">
-  <img src="docs/assets/logo.png" alt="pgQueryNarrative" width="320" />
-</p>
-
 # PgQueryNarrative
 
 Turn SQL query results into business narratives with AI. Run read-only SQL against PostgreSQL, get metrics and chart suggestions, and generate narrative reports using your choice of LLM (Ollama, OpenAI, Claude, Gemini, Groq).
 
 ## Quick start
 
-**With Docker** (PostgreSQL and app in containers):
+**Docker (PostgreSQL + app in containers):**
 
 ```bash
 make start-docker
 ```
 
-**With local PostgreSQL** (app on host; PostgreSQL must be running):
+**Local PostgreSQL** (app on host; Postgres must be running):
 
 ```bash
 make start-local
 ```
 
-Then open **http://localhost:8080** or call the API:
+Then open **http://localhost:8080** or call the API ([API examples](docs/api/examples.md)):
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/queries/run \
@@ -51,18 +47,18 @@ curl -X POST http://localhost:8080/api/v1/queries/run \
 | `app/` | Core logic (config, DB, query runner, metrics, LLM, narrative, service) |
 | `api/design/` | API design (Goa); generated code in `api/gen/` |
 | `web/` | Web UI and static assets |
-| `docs/` | User and developer documentation |
-| `test/unit/` | Unit tests by feature |
+| `docs/` | Documentation |
+| `test/unit/` | Unit tests |
 | `changelog/` | Release history |
 
 ## Documentation
 
-Full documentation is in the **[docs](docs/README.md)** directory:
+Full docs in **[docs/](docs/README.md)**:
 
 - **Getting started:** [Installation](docs/getting-started/installation.md), [Quick start](docs/getting-started/quickstart.md), [LLM setup](docs/getting-started/llm-setup.md)
 - **User guides:** [Configuration](docs/configuration.md), [CLI usage](docs/usage/cli-usage.md)
 - **API:** [Reference](docs/api/README.md), [Examples](docs/api/examples.md)
-- **Reference:** [Troubleshooting](docs/reference/troubleshooting.md), [PostgreSQL extension](docs/reference/postgres-extension.md), [Deployment](docs/reference/deployment.md)
+- **Reference:** [Deployment](docs/reference/deployment.md), [Troubleshooting](docs/reference/troubleshooting.md), [PostgreSQL extension](docs/reference/postgres-extension.md)
 - **Development:** [Setup](docs/development/setup.md), [Testing](docs/development/testing.md)
 
 ## License

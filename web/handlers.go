@@ -126,7 +126,7 @@ func (h *Handlers) Home(w http.ResponseWriter, r *http.Request) {
 </body>
 </html>`, apiStatusClass, apiStatus, apiMessage)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	io.WriteString(w, html)
+	_, _ = io.WriteString(w, html)
 }
 
 func (h *Handlers) QueryPage(w http.ResponseWriter, r *http.Request) {
@@ -182,7 +182,7 @@ func (h *Handlers) QueryPage(w http.ResponseWriter, r *http.Request) {
 </body>
 </html>`
 	w.Header().Set("Content-Type", "text/html")
-	io.WriteString(w, html)
+	_, _ = io.WriteString(w, html)
 }
 
 func (h *Handlers) SavedQueries(w http.ResponseWriter, r *http.Request) {
@@ -226,7 +226,7 @@ func (h *Handlers) SavedQueries(w http.ResponseWriter, r *http.Request) {
 </body>
 </html>`
 	w.Header().Set("Content-Type", "text/html")
-	io.WriteString(w, html)
+	_, _ = io.WriteString(w, html)
 }
 
 func (h *Handlers) Reports(w http.ResponseWriter, r *http.Request) {
@@ -275,7 +275,7 @@ func (h *Handlers) Reports(w http.ResponseWriter, r *http.Request) {
 </body>
 </html>`
 	w.Header().Set("Content-Type", "text/html")
-	io.WriteString(w, html)
+	_, _ = io.WriteString(w, html)
 }
 
 func FormatQueryResultsHTML(result *queries.RunQueryResult) string {
@@ -516,11 +516,6 @@ func rowValueToScalar(val interface{}) interface{} {
 	}
 }
 
-// formatFloat formats a float64 for display (e.g. in period comparison).
-func formatFloat(v float64) string {
-	return fmt.Sprintf("%.2f", v)
-}
-
 // formatFloatWithCommas formats a float64 with thousands separators (e.g. 45793291.51 -> "45,793,291.51").
 func formatFloatWithCommas(v float64) string {
 	s := fmt.Sprintf("%.2f", v)
@@ -605,7 +600,7 @@ func (h *Handlers) RunQuery(w http.ResponseWriter, r *http.Request) {
 			errorHTML := "<div class='error-message'><strong>Error:</strong> An unexpected error occurred. Please try again.</div>"
 			w.Header().Set("Content-Type", "text/html")
 			w.WriteHeader(http.StatusInternalServerError)
-			io.WriteString(w, errorHTML)
+			_, _ = io.WriteString(w, errorHTML)
 		}
 	}()
 
@@ -618,7 +613,7 @@ func (h *Handlers) RunQuery(w http.ResponseWriter, r *http.Request) {
 		errorHTML := "<div class='error-message'><strong>Error:</strong> Failed to parse form data. Please try again.</div>"
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusBadRequest)
-		io.WriteString(w, errorHTML)
+		_, _ = io.WriteString(w, errorHTML)
 		return
 	}
 
@@ -627,7 +622,7 @@ func (h *Handlers) RunQuery(w http.ResponseWriter, r *http.Request) {
 		errorHTML := "<div class='error-message'><strong>Error:</strong> SQL query cannot be empty.</div>"
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusBadRequest)
-		io.WriteString(w, errorHTML)
+		_, _ = io.WriteString(w, errorHTML)
 		return
 	}
 
@@ -664,7 +659,7 @@ func (h *Handlers) RunQuery(w http.ResponseWriter, r *http.Request) {
 		errorHTML += "</div>"
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusBadRequest)
-		io.WriteString(w, errorHTML)
+		_, _ = io.WriteString(w, errorHTML)
 		return
 	}
 
@@ -673,14 +668,14 @@ func (h *Handlers) RunQuery(w http.ResponseWriter, r *http.Request) {
 		errorHTML := "<div class='error-message'><strong>Error:</strong> Invalid response type. Please try again.</div>"
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusInternalServerError)
-		io.WriteString(w, errorHTML)
+		_, _ = io.WriteString(w, errorHTML)
 		return
 	}
 
 	html := FormatQueryResultsHTML(queryResult)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	io.WriteString(w, html)
+	_, _ = io.WriteString(w, html)
 }
 
 // GenerateReport handles form submission from web UI and converts to API call
@@ -717,7 +712,7 @@ func (h *Handlers) GenerateReport(w http.ResponseWriter, r *http.Request) {
 		}
 		errorHTML += "</div>"
 		w.Header().Set("Content-Type", "text/html")
-		io.WriteString(w, errorHTML)
+		_, _ = io.WriteString(w, errorHTML)
 		return
 	}
 
@@ -726,14 +721,14 @@ func (h *Handlers) GenerateReport(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		errorHTML := "<div class='error-message'><strong>Error:</strong> Invalid response type</div>"
 		w.Header().Set("Content-Type", "text/html")
-		io.WriteString(w, errorHTML)
+		_, _ = io.WriteString(w, errorHTML)
 		return
 	}
 
 	// Format report as HTML
 	html := FormatReportHTML(reportResult)
 	w.Header().Set("Content-Type", "text/html")
-	io.WriteString(w, html)
+	_, _ = io.WriteString(w, html)
 }
 
 // FormatReportHTML formats report results as HTML with model badge and improved layout.

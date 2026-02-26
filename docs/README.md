@@ -1,64 +1,53 @@
 # PgQueryNarrative documentation
 
-PgQueryNarrative turns SQL query results into business narratives with AI. This documentation covers installation, configuration, the API, deployment, and development.
+PgQueryNarrative turns SQL results into business narratives using an LLM. Run read-only SQL against PostgreSQL, get metrics and chart suggestions, and generate narrative reports.
 
-**New to the project?** Start with [Quick start](getting-started/quickstart.md) (Docker or local PostgreSQL), then [LLM setup](getting-started/llm-setup.md) for report generation. For deployment to Docker/Kubernetes/Helm, see [Deployment](reference/deployment.md).
-
-**Where to find:** Run the app → [Quick start](getting-started/quickstart.md), [Installation](getting-started/installation.md). Configure env → [Configuration](configuration.md). Call the API → [API reference](api/README.md), [API examples](api/examples.md). Embed in Go → [Embedded integration](getting-started/embedded.md). Deploy → [Deployment](reference/deployment.md). Build/test → [Development setup](development/setup.md), [Testing](development/testing.md). Problems → [Troubleshooting](reference/troubleshooting.md).
+**Start here:** [Quick start](getting-started/quickstart.md) → [LLM setup](getting-started/llm-setup.md) (for reports) → [Configuration](configuration.md).
 
 ---
 
-## Getting started
+## Documentation index
 
-| Document | Description |
-|----------|-------------|
-| [Installation](getting-started/installation.md) | Prerequisites, database setup, and running the application |
-| [Quick start](getting-started/quickstart.md) | Minimal steps to run with Docker or local PostgreSQL |
-| [LLM setup](getting-started/llm-setup.md) | Configure an LLM provider for report generation (Ollama, OpenAI, Claude, Gemini, Groq) and MCP |
-| [Embedded integration](getting-started/embedded.md) | Use as a library or mount HTTP endpoints in Chi, Gin, or Echo |
+### Getting started
 
----
+| Doc | Description |
+|-----|-------------|
+| [Installation](getting-started/installation.md) | Prerequisites, database setup, run methods |
+| [Quick start](getting-started/quickstart.md) | Run with Docker or local PostgreSQL |
+| [LLM setup](getting-started/llm-setup.md) | Configure LLM for report generation (Ollama, OpenAI, Claude, Gemini, Groq) and MCP |
+| [Embedded integration](getting-started/embedded.md) | Use as a Go library or mount HTTP in Chi, Gin, Echo |
 
-## User guides
+### User guides
 
-| Document | Description |
-|----------|-------------|
-| [Configuration](configuration.md) | Environment variables (server, database, LLM, metrics) |
-| [CLI usage](usage/cli-usage.md) | Command-line interface for queries, saved queries, and reports |
+| Doc | Description |
+|-----|-------------|
+| [Configuration](configuration.md) | Environment variables (server, database, LLM, embeddings) |
+| [CLI usage](usage/cli-usage.md) | Command-line interface for queries, saved queries, reports |
 
----
+### API
 
-## API
+| Doc | Description |
+|-----|-------------|
+| [API reference](api/README.md) | REST endpoints, request/response, error codes |
+| [API examples](api/examples.md) | cURL examples for run, save, reports |
 
-| Document | Description |
-|----------|-------------|
-| [API reference](api/README.md) | REST endpoints, request/response formats, error codes |
-| [API examples](api/examples.md) | cURL examples for running queries, saving queries, and generating reports |
+### Reference
 
----
+| Doc | Description |
+|-----|-------------|
+| [Deployment](reference/deployment.md) | Docker, Kubernetes, Helm |
+| [Operations](reference/operations.md) | Monitoring, health checks, runbooks |
+| [Troubleshooting](reference/troubleshooting.md) | Common issues and fixes |
+| [PostgreSQL extension](reference/postgres-extension.md) | Call the API from SQL via `CREATE EXTENSION pgquerynarrative` |
+| [Semantic search (pgvector)](reference/semantic-search-pgvector.md) | Embeddings, similar-query search, RAG |
 
-## Reference
+### Development
 
-| Document | Description |
-|----------|-------------|
-| [Deployment](reference/deployment.md) | Docker build/compose, Kubernetes manifests, Helm chart |
-| [Operations](reference/operations.md) | Monitoring, health checks, and runbooks (deploy, rollback, incidents) |
-| [Troubleshooting](reference/troubleshooting.md) | Common issues and solutions |
-| [PostgreSQL extension](reference/postgres-extension.md) | Run queries and generate reports from SQL |
+| Doc | Description |
+|-----|-------------|
+| [Development setup](development/setup.md) | Build, test, codegen, workflow |
+| [Testing](development/testing.md) | Unit, integration, E2E tests |
 
----
+**Contributing & security:** [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md), [.github/SECURITY.md](../.github/SECURITY.md).
 
-## Development
-
-| Document | Description |
-|----------|-------------|
-| [Development setup](development/setup.md) | Build, test, code generation, and workflow |
-| [Testing](development/testing.md) | Running unit and integration tests, QA checklist |
-
-For contributing and security, see the [.github](https://github.com/pgquerynarrative/pgquerynarrative/tree/main/.github) directory (CONTRIBUTING.md, SECURITY.md).
-
----
-
-## Changelog
-
-Release history and unreleased changes: [CHANGELOG.md](../CHANGELOG.md).
+**Changelog:** [CHANGELOG.md](../CHANGELOG.md).

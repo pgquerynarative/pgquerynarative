@@ -1,8 +1,10 @@
 # Quick start
 
+Minimal steps to run PgQueryNarrative.
+
 ## Prerequisites
 
-- Docker, or PostgreSQL 16+ and Go 1.24+
+Docker, or PostgreSQL 16+ and Go 1.24+.
 
 ## Docker
 
@@ -12,7 +14,7 @@ cd pgquerynarrative
 make start-docker
 ```
 
-This uses the root `docker-compose.yml` (PostgreSQL + app from root `Dockerfile`). App: `http://localhost:8080`. For a production-style image and compose, see [Deployment](../reference/deployment.md).
+Uses root `docker-compose.yml` (PostgreSQL + app). App: http://localhost:8080. Production image: [Deployment](../reference/deployment.md).
 
 ## Local PostgreSQL
 
@@ -23,10 +25,10 @@ pg_isready   # ensure Postgres is running
 make start-local
 ```
 
-## First steps
+## Next steps
 
-- **Web:** http://localhost:8080
-- **CLI:** `make cli CMD='query "SELECT * FROM demo.sales LIMIT 5"'` ([CLI usage](../usage/cli-usage.md))
+- **Web UI:** http://localhost:8080
+- **CLI:** `make cli CMD='query "SELECT * FROM demo.sales LIMIT 5"'` — [CLI usage](../usage/cli-usage.md)
 - **API:** [API examples](../api/examples.md)
 
 ## See also
@@ -34,7 +36,6 @@ make start-local
 - [Installation](installation.md) — Prerequisites and detailed setup
 - [LLM setup](llm-setup.md) — Report generation and MCP
 - [Configuration](../configuration.md) — Environment variables
-- [Deployment](../reference/deployment.md) — Docker build/compose, Kubernetes, Helm
-- [API examples](../api/examples.md) — cURL for queries and reports
+- [Deployment](../reference/deployment.md) — Docker build, Kubernetes, Helm
 - [Troubleshooting](../reference/troubleshooting.md) — Common issues
 - [Documentation index](../README.md)

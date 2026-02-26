@@ -169,7 +169,7 @@ test: test-unit test-integration
 
 test-unit:
 	@echo "🧪 Running unit tests..."
-	$(GO) test ./test/unit/... ./cmd/server/... ./pkg/narrative/... -v
+	$(GO) test ./test/unit/... ./cmd/server/... ./pkg/narrative/... ./app/embedding/... -v
 
 # No-op target so "make test-unit # comment" does not fail when shell passes # as a target.
 \#:
@@ -214,6 +214,12 @@ migrate:
 	fi; \
 	sh ./tools/db/migrate.sh up "$$DB_URL"
 
+# Fix dirty migration state: make migrate-force VERSION=6 then make migrate
+migrate-force:
+	@DB_URL="$${DB_URL:-$${DATABASE_URL:-$(LOCAL_DB_URL)}}"; \
+	if [ -z "$$DB_URL" ]; then DB_URL="$(LOCAL_DB_URL)"; fi; \
+	sh ./tools/db/migrate.sh force "$(VERSION)" "$$DB_URL"
+
 seed:
 	@DB_URL="$${DB_URL:-$${DATABASE_URL:-$(LOCAL_DB_URL)}}"; \
 	if [ -z "$$DB_URL" ]; then \
@@ -248,7 +254,7 @@ dev-stop:
 	docker compose down
 
 docker-up:
-	sh ./tools/docker/up.sh
+	docker compose up -d
 
 docker-down:
 	docker compose down
@@ -300,21 +306,20 @@ changelog:
 # PostgreSQL Extension
 # ============================================================================
 
-# One command to start Postgres, init DB, and install the extension (Docker only)
+# Docker: start Postgres, init, migrate, install extension files, create extension, seed
 setup-extension-docker:
-	@echo "📦 Setting up Postgres and PgQueryNarrative extension (Docker)..."
+	@echo "📦 Setting up Postgres and extension (Docker)..."
 	@docker compose up -d postgres
-	@echo "Waiting for Postgres..."
 	@for i in 1 2 3 4 5 6 7 8 9 10; do docker compose exec -T postgres pg_isready -U postgres 2>/dev/null && break; sleep 2; done
 	@$(MAKE) db-init
+	@DB_URL="postgres://postgres:postgres@localhost:5432/pgquerynarrative?sslmode=disable" $(MAKE) migrate
 	@$(MAKE) install-extension-docker
-	@echo "Seeding demo data..."
-	@docker compose exec -T postgres psql -U postgres -d pgquerynarrative -f - < tools/db/seed.sql 2>/dev/null || echo "  (seed skipped or already done)"
-	@echo ""
+	@docker compose exec -T postgres psql -U postgres -d pgquerynarrative -c "CREATE EXTENSION IF NOT EXISTS pgquerynarrative;"
+	@docker compose exec -T postgres psql -U postgres -d pgquerynarrative -f - < tools/db/seed.sql 2>/dev/null || true
 	@echo "Done. Test: docker compose exec postgres psql -U postgres -d pgquerynarrative -c \"SELECT pgquerynarrative_run_query('SELECT 1 FROM demo.sales LIMIT 1', 1);\""
 
+# Copy extension files to Postgres sharedir (local: make install-extension; Docker: make install-extension-docker)
 install-extension:
-	@echo "📦 Installing PgQueryNarrative PostgreSQL extension..."
 	@sh ./tools/db/install-extension.sh
 
 install-extension-docker:

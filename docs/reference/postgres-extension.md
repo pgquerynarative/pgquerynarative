@@ -1,21 +1,25 @@
 # PostgreSQL extension
 
-Call PgQueryNarrative from SQL: run queries, generate reports, and list saved queries. Requires the PgQueryNarrative service to be running and PostgreSQL 16+. Extension files live in `infra/postgres-extension/`.
+Call PgQueryNarrative from SQL. Requires the PgQueryNarrative service running and PostgreSQL 16+. Extension files: `infra/postgres-extension/`.
 
-## Easy install (Docker)
+## Install
 
-From the repo root:
+**Postgres already running:**
+
+1. Copy extension files into Postgres extension directory:
+   - **Local:** `make install-extension` (uses `pg_config --sharedir`)
+   - **Docker:** `make install-extension-docker`
+2. In psql, in your database:
+   ```sql
+   CREATE EXTENSION pgquerynarrative;
+   ```
+   Optional (for real API calls from SQL): `CREATE EXTENSION http;` then create pgquerynarrative; the extension uses http when present.
+
+**Docker full setup** (start Postgres, init, migrate, install extension, create it, seed):
 
 ```bash
 make setup-extension-docker
 ```
-
-Starts Postgres, inits the DB, runs migrations, installs the extension, and seeds demo data. If Postgres is already running, use `make install-extension-docker` to install or reinstall the extension only.
-
-## Install (summary)
-
-- **Docker:** `make setup-extension-docker` (full setup) or `make install-extension-docker` (extension only).
-- **Local:** `make install-extension` (set `PGHOST`, `PGPORT`, `PGQUERYNARRATIVE_DB`, `PGQUERYNARRATIVE_USER`), or run `pgquerynarrative--1.0.sql` and optionally `pgquerynarrative--1.0--with-http.sql` (requires the [http](https://github.com/pramsey/pgsql-http) extension) with `psql`.
 
 ## Configuration
 
@@ -24,13 +28,17 @@ SELECT pgquerynarrative_set_api_url('http://localhost:8080');
 SELECT pgquerynarrative_get_api_url();
 ```
 
+From inside Docker to reach app on host: `http://host.docker.internal:8080`.
+
 ## Functions
 
 | Function | Description |
 |----------|-------------|
-| `pgquerynarrative_run_query(query_sql, row_limit)` | Run a read-only query; returns JSON. Default limit 100. |
-| `pgquerynarrative_generate_report(query_sql)` | Generate a narrative report (JSON). |
+| `pgquerynarrative_run_query(query_sql, row_limit)` | Run read-only query; returns JSON. Default limit 100. |
+| `pgquerynarrative_generate_report(query_sql)` | Generate narrative report (JSON). Requires [LLM](../getting-started/llm-setup.md). |
 | `pgquerynarrative_list_saved(limit, offset)` | List saved queries (JSON). |
+
+Without the `http` extension, these return a JSON "pending" message; install `http` for real API calls.
 
 ## Example
 
@@ -44,16 +52,9 @@ SELECT pgquerynarrative_generate_report(
 );
 ```
 
-## Troubleshooting
-
-- **Placeholder or empty result:** Install the HTTP extension and apply `pgquerynarrative--1.0--with-http.sql`.
-- **Connection errors:** Verify the PgQueryNarrative service is running and the API URL is correct (use `http://host.docker.internal:8080` when Postgres is in Docker and the app is on the host).
-- **Role/database issues:** See [Troubleshooting](troubleshooting.md).
-
 ## See also
 
-- [API reference](../api/README.md) — REST endpoints called by the extension
-- [Configuration](../configuration.md) — Server and database config
-- [Deployment](deployment.md) — Running the service (Docker, Kubernetes, Helm)
+- [API reference](../api/README.md) — REST endpoints used by the extension
+- [Configuration](../configuration.md) — Server and database
 - [Troubleshooting](troubleshooting.md) — Common issues
 - [Documentation index](../README.md)

@@ -1,6 +1,6 @@
 # API examples
 
-Base URL: `http://localhost:8080` (or set `PGQUERYNARRATIVE_PORT` if different). All examples use `application/json`.
+Base URL: `http://localhost:8080` (or set `PGQUERYNARRATIVE_PORT`). All examples use `application/json`.
 
 ## Run query
 
@@ -13,7 +13,7 @@ curl -X POST http://localhost:8080/api/v1/queries/run \
   }'
 ```
 
-Response includes `columns`, `rows`, `row_count`, `execution_time_ms`, optional `chart_suggestions` and `period_comparison` (when the result has a time column and measures). See [Period comparison](../features/period-comparison.md).
+Response: `columns`, `rows`, `row_count`, `execution_time_ms`, optional `chart_suggestions`, `period_comparison` (when result has a time column and measures).
 
 ## Save query
 
@@ -29,7 +29,7 @@ curl -X POST http://localhost:8080/api/v1/queries/saved \
 
 ## Generate report
 
-Requires a configured LLM. See [LLM setup](../getting-started/llm-setup.md) and [Configuration – LLM](../configuration.md#llm).
+Requires a configured [LLM](../getting-started/llm-setup.md). See [Configuration – LLM](../configuration.md#llm).
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/reports/generate \
@@ -39,11 +39,11 @@ curl -X POST http://localhost:8080/api/v1/reports/generate \
   }'
 ```
 
-Response includes `narrative`, `metrics` (aggregates, top_categories, time_series, data_quality, perf_suggestions, and when applicable `period_current_label` / `period_previous_label`).
+Response: `narrative`, `metrics` (aggregates, time_series, data_quality, perf_suggestions, etc.).
 
-### Single-period query (no “previous period” in narrative)
+### Single-period query
 
-When the result has no time-series comparison (e.g. one aggregate over “last 30 days”), the narrative will not mention “previous period” or “same period last year”:
+When the result has no time-series comparison, the narrative will not mention "previous period":
 
 ```bash
 curl -s -X POST http://localhost:8080/api/v1/reports/generate \
@@ -52,15 +52,10 @@ curl -s -X POST http://localhost:8080/api/v1/reports/generate \
   | jq '.narrative'
 ```
 
-### Get report by ID
+### Get / list reports
 
 ```bash
 curl -s http://localhost:8080/api/v1/reports/REPORT_UUID | jq .
-```
-
-### List reports
-
-```bash
 curl -s "http://localhost:8080/api/v1/reports?limit=5&offset=0" | jq '.items[] | {id, created_at}'
 ```
 
@@ -68,7 +63,6 @@ curl -s "http://localhost:8080/api/v1/reports?limit=5&offset=0" | jq '.items[] |
 
 - [API reference](README.md) — Full endpoint list and error codes
 - [LLM setup](../getting-started/llm-setup.md) — Required for report generation
-- [Configuration](../configuration.md) — Base URL and LLM variables
-- [Quick start](../getting-started/quickstart.md) — Get the app running first
-- [Period comparison](../features/period-comparison.md) — Time-series and run-query response
+- [Configuration](../configuration.md) — Base URL and LLM
+- [Quick start](../getting-started/quickstart.md) — Get the app running
 - [Documentation index](../README.md)

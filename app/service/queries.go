@@ -5,6 +5,7 @@ package service
 import (
 	"context"
 	"errors"
+	"math"
 	"strings"
 	"time"
 
@@ -114,10 +115,14 @@ func (s *QueriesService) Run(ctx context.Context, payload *queries.RunQueryPaylo
 	chartSuggestions := suggestToQueries(charts.Suggest(colNames, colTypes, result.Rows))
 	periodComparison, currentLabel, previousLabel := timeSeriesToPeriodComparison(colNames, result.Rows, s.trendThreshold)
 
+	var rowCount32 int32 = math.MaxInt32
+	if result.RowCount < math.MaxInt32 {
+		rowCount32 = int32(result.RowCount)
+	}
 	res := &queries.RunQueryResult{
 		Columns:          cols,
 		Rows:             result.Rows,
-		RowCount:         int32(result.RowCount),
+		RowCount:         rowCount32,
 		ExecutionTimeMs:  result.ExecutionTimeMs,
 		Limit:            int32(result.RowLimitApplied),
 		ChartSuggestions: chartSuggestions,

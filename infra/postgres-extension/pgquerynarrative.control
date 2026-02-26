@@ -1,5 +1,2 @@
-# PostgreSQL extension control file for PgQueryNarrative
-comment = 'Turn SQL query results into business narratives with AI'
+comment = 'Call PgQueryNarrative API from SQL'
 default_version = '1.0'
-module_pathname = '$libdir/pgquerynarrative'
-relocatable = false

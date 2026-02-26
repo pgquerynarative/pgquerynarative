@@ -7,6 +7,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -66,7 +67,11 @@ func NewPools(ctx context.Context, cfg config.DatabaseConfig) (*Pools, error) {
 		return nil, fmt.Errorf("%w: %v", errors.ErrReadOnlyPoolFailed, err)
 	}
 
-	readOnlyPool.Config().MaxConns = int32(cfg.MaxConnections)
+	var maxConns32 int32 = math.MaxInt32
+	if cfg.MaxConnections < math.MaxInt32 {
+		maxConns32 = int32(cfg.MaxConnections)
+	}
+	readOnlyPool.Config().MaxConns = maxConns32
 	readOnlyPool.Config().MaxConnLifetime = 30 * time.Minute
 	readOnlyPool.Config().MinConns = 2
 
@@ -92,7 +97,7 @@ func NewPools(ctx context.Context, cfg config.DatabaseConfig) (*Pools, error) {
 		return nil, fmt.Errorf("%w: %v", errors.ErrAppPoolFailed, err)
 	}
 
-	appPool.Config().MaxConns = int32(cfg.MaxConnections)
+	appPool.Config().MaxConns = maxConns32
 	appPool.Config().MaxConnLifetime = 30 * time.Minute
 	appPool.Config().MinConns = 2
 
