@@ -26,7 +26,7 @@ import (
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() []string {
 	return []string{
-		"suggestions queries",
+		"suggestions (queries|similar)",
 		"schema get",
 		"reports (generate|get|list)",
 		"queries (run|list-saved|save|get-saved|delete-saved)",
@@ -37,7 +37,7 @@ func UsageCommands() []string {
 func UsageExamples() string {
 	return os.Args[0] + " " + "suggestions queries --intent \"Ut quia nulla assumenda.\" --limit 11" + "\n" +
 		os.Args[0] + " " + "schema get" + "\n" +
-		os.Args[0] + " " + "reports generate --body '{\n      \"saved_query_id\": \"9c2156dd-38a8-460e-a662-56ee647b5884\",\n      \"sql\": \"za\"\n   }'" + "\n" +
+		os.Args[0] + " " + "reports generate --body '{\n      \"saved_query_id\": \"9c2156dd-38a8-4b43-bc5e-ea38bb3f219b\",\n      \"sql\": \"h\"\n   }'" + "\n" +
 		os.Args[0] + " " + "queries run --body '{\n      \"limit\": 296,\n      \"sql\": \"952\"\n   }'" + "\n" +
 		""
 }
@@ -57,6 +57,10 @@ func ParseEndpoint(
 		suggestionsQueriesFlags      = flag.NewFlagSet("queries", flag.ExitOnError)
 		suggestionsQueriesIntentFlag = suggestionsQueriesFlags.String("intent", "", "")
 		suggestionsQueriesLimitFlag  = suggestionsQueriesFlags.String("limit", "5", "")
+
+		suggestionsSimilarFlags     = flag.NewFlagSet("similar", flag.ExitOnError)
+		suggestionsSimilarTextFlag  = suggestionsSimilarFlags.String("text", "", "")
+		suggestionsSimilarLimitFlag = suggestionsSimilarFlags.String("limit", "5", "")
 
 		schemaFlags = flag.NewFlagSet("schema", flag.ContinueOnError)
 
@@ -96,6 +100,7 @@ func ParseEndpoint(
 	)
 	suggestionsFlags.Usage = suggestionsUsage
 	suggestionsQueriesFlags.Usage = suggestionsQueriesUsage
+	suggestionsSimilarFlags.Usage = suggestionsSimilarUsage
 
 	schemaFlags.Usage = schemaUsage
 	schemaGetFlags.Usage = schemaGetUsage
@@ -154,6 +159,9 @@ func ParseEndpoint(
 			switch epn {
 			case "queries":
 				epf = suggestionsQueriesFlags
+
+			case "similar":
+				epf = suggestionsSimilarFlags
 
 			}
 
@@ -222,6 +230,9 @@ func ParseEndpoint(
 			case "queries":
 				endpoint = c.Queries()
 				data, err = suggestionsc.BuildQueriesPayload(*suggestionsQueriesIntentFlag, *suggestionsQueriesLimitFlag)
+			case "similar":
+				endpoint = c.Similar()
+				data, err = suggestionsc.BuildSimilarPayload(*suggestionsSimilarTextFlag, *suggestionsSimilarLimitFlag)
 			}
 		case "schema":
 			c := schemac.NewClient(scheme, host, doer, enc, dec, restore)
@@ -277,6 +288,7 @@ func suggestionsUsage() {
 	fmt.Fprintf(os.Stderr, "Usage:\n    %s [globalflags] suggestions COMMAND [flags]\n\n", os.Args[0])
 	fmt.Fprintln(os.Stderr, "COMMAND:")
 	fmt.Fprintln(os.Stderr, `    queries: Return suggested SQL queries: curated examples plus saved queries matching optional intent.`)
+	fmt.Fprintln(os.Stderr, `    similar: Return saved queries semantically similar to the given text (embedding-based). Requires embeddings to be enabled.`)
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Additional help:")
 	fmt.Fprintf(os.Stderr, "    %s suggestions COMMAND --help\n", os.Args[0])
@@ -299,6 +311,26 @@ func suggestionsQueriesUsage() {
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
 	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "suggestions queries --intent \"Ut quia nulla assumenda.\" --limit 11")
+}
+
+func suggestionsSimilarUsage() {
+	// Header with flags
+	fmt.Fprintf(os.Stderr, "%s [flags] suggestions similar", os.Args[0])
+	fmt.Fprint(os.Stderr, " -text STRING")
+	fmt.Fprint(os.Stderr, " -limit INT32")
+	fmt.Fprintln(os.Stderr)
+
+	// Description
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, `Return saved queries semantically similar to the given text (embedding-based). Requires embeddings to be enabled.`)
+
+	// Flags list
+	fmt.Fprintln(os.Stderr, `    -text STRING: `)
+	fmt.Fprintln(os.Stderr, `    -limit INT32: `)
+
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "Example:")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "suggestions similar --text \"Suscipit eum magni cupiditate.\" --limit 6")
 }
 
 // schemaUsage displays the usage of the schema command and its subcommands.
@@ -354,7 +386,7 @@ func reportsGenerateUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "reports generate --body '{\n      \"saved_query_id\": \"9c2156dd-38a8-460e-a662-56ee647b5884\",\n      \"sql\": \"za\"\n   }'")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "reports generate --body '{\n      \"saved_query_id\": \"9c2156dd-38a8-4b43-bc5e-ea38bb3f219b\",\n      \"sql\": \"h\"\n   }'")
 }
 
 func reportsGetUsage() {
@@ -372,7 +404,7 @@ func reportsGetUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "reports get --id \"410a52b4-7305-44af-ae9f-a191743c1d39\"")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "reports get --id \"ca70d487-e8fd-446e-a95e-c903330078cd\"")
 }
 
 func reportsListUsage() {

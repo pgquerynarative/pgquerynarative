@@ -300,12 +300,22 @@ changelog:
 # PostgreSQL Extension
 # ============================================================================
 
+# One command to start Postgres, init DB, and install the extension (Docker only)
+setup-extension-docker:
+	@echo "📦 Setting up Postgres and PgQueryNarrative extension (Docker)..."
+	@docker compose up -d postgres
+	@echo "Waiting for Postgres..."
+	@for i in 1 2 3 4 5 6 7 8 9 10; do docker compose exec -T postgres pg_isready -U postgres 2>/dev/null && break; sleep 2; done
+	@$(MAKE) db-init
+	@$(MAKE) install-extension-docker
+	@echo "Seeding demo data..."
+	@docker compose exec -T postgres psql -U postgres -d pgquerynarrative -f - < tools/db/seed.sql 2>/dev/null || echo "  (seed skipped or already done)"
+	@echo ""
+	@echo "Done. Test: docker compose exec postgres psql -U postgres -d pgquerynarrative -c \"SELECT pgquerynarrative_run_query('SELECT 1 FROM demo.sales LIMIT 1', 1);\""
+
 install-extension:
 	@echo "📦 Installing PgQueryNarrative PostgreSQL extension..."
 	@sh ./tools/db/install-extension.sh
 
 install-extension-docker:
-	@echo "📦 Installing PgQueryNarrative extension in Docker PostgreSQL..."
-	@docker compose exec postgres psql -U postgres -d pgquerynarrative -f /docker-entrypoint-initdb.d/extension/pgquerynarrative--1.0.sql || \
-		docker compose exec postgres psql -U pgquerynarrative_app -d pgquerynarrative -f /docker-entrypoint-initdb.d/extension/pgquerynarrative--1.0.sql || \
-		echo "⚠ Extension installation requires manual setup. See docs/reference/postgres-extension.md"
+	@sh ./tools/db/install-extension-docker.sh

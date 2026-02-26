@@ -10,11 +10,19 @@ import (
 
 // Config holds all application configuration.
 type Config struct {
-	Server   ServerConfig   // HTTP server configuration
-	Database DatabaseConfig // Database connection settings
-	Security SecurityConfig // Security settings
-	LLM      LLMConfig      // LLM provider configuration
-	Metrics  MetricsConfig  // Metrics and period-comparison settings
+	Server    ServerConfig    // HTTP server configuration
+	Database  DatabaseConfig  // Database connection settings
+	Security  SecurityConfig  // Security settings
+	LLM       LLMConfig       // LLM provider configuration
+	Metrics   MetricsConfig   // Metrics and period-comparison settings
+	Embedding EmbeddingConfig // Optional embeddings for RAG and similar-query retrieval
+}
+
+// EmbeddingConfig holds settings for embedding models (RAG, similar-query).
+// When BaseURL and Model are empty, embeddings are disabled.
+type EmbeddingConfig struct {
+	BaseURL string // e.g. Ollama base URL (http://localhost:11434)
+	Model   string // e.g. nomic-embed-text
 }
 
 // MetricsConfig holds settings for metrics and period-over-period comparison.
@@ -61,7 +69,7 @@ type LLMConfig struct {
 // Load reads configuration from environment variables and returns a Config struct.
 // All settings have sensible defaults for local development.
 func Load() Config {
-	return Config{
+	cfg := Config{
 		Server: ServerConfig{
 			Host:         getEnv("PGQUERYNARRATIVE_HOST", "0.0.0.0"),
 			Port:         getEnvInt("PGQUERYNARRATIVE_PORT", 8080),
@@ -92,7 +100,15 @@ func Load() Config {
 		Metrics: MetricsConfig{
 			TrendThresholdPercent: getEnvFloat("PERIOD_TREND_THRESHOLD_PERCENT", 0.5),
 		},
+		Embedding: EmbeddingConfig{
+			BaseURL: getEnv("EMBEDDING_BASE_URL", ""),
+			Model:   getEnv("EMBEDDING_MODEL", "nomic-embed-text"),
+		},
 	}
+	if cfg.Embedding.BaseURL == "" && cfg.LLM.Provider == "ollama" && cfg.LLM.BaseURL != "" {
+		cfg.Embedding.BaseURL = cfg.LLM.BaseURL
+	}
+	return cfg
 }
 
 // getEnvFloat retrieves a float environment variable or returns a default value.

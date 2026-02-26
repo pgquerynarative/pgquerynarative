@@ -76,6 +76,8 @@ type TimeSeriesMetric struct {
 	TrendSummary *TrendSummary
 	// NextPeriodForecast is a simple predictive value: last period + slope (optional).
 	NextPeriodForecast *float64
+	// PredictiveSummary is a short human-readable sentence for the narrative (e.g. "Next period forecast: 1,234 (linear trend over 6 periods)").
+	PredictiveSummary string
 }
 
 // ColumnQuality holds data-quality metrics for a column (nulls, distinct ratio).

@@ -406,6 +406,7 @@ func (m *Metrics) calculateTimeSeries(columns []string, rows [][]interface{}, pr
 			if len(values) > 0 {
 				forecast := values[len(values)-1] + slope
 				ts.NextPeriodForecast = &forecast
+				ts.PredictiveSummary = formatPredictiveSummary(forecast, nTrend)
 			}
 		}
 
@@ -520,6 +521,13 @@ func formatTrendSummary(direction string, slope, avgVal float64, periodsUsed int
 	default:
 		return "Stable over last " + strconv.Itoa(periodsUsed) + " periods."
 	}
+}
+
+func formatPredictiveSummary(forecast float64, periodsUsed int) string {
+	if periodsUsed == 0 {
+		return ""
+	}
+	return "Next period forecast: " + formatOneDecimal(forecast) + " (linear trend over " + strconv.Itoa(periodsUsed) + " periods)."
 }
 
 // getStringValue converts an interface{} to string

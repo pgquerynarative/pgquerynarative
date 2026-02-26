@@ -21,6 +21,10 @@ type Client struct {
 	// endpoint.
 	QueriesDoer goahttp.Doer
 
+	// Similar Doer is the HTTP client used to make requests to the similar
+	// endpoint.
+	SimilarDoer goahttp.Doer
+
 	// RestoreResponseBody controls whether the response bodies are reset after
 	// decoding so they can be read again.
 	RestoreResponseBody bool
@@ -42,6 +46,7 @@ func NewClient(
 ) *Client {
 	return &Client{
 		QueriesDoer:         doer,
+		SimilarDoer:         doer,
 		RestoreResponseBody: restoreBody,
 		scheme:              scheme,
 		host:                host,
@@ -69,6 +74,30 @@ func (c *Client) Queries() goa.Endpoint {
 		resp, err := c.QueriesDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("suggestions", "queries", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// Similar returns an endpoint that makes HTTP requests to the suggestions
+// service similar server.
+func (c *Client) Similar() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeSimilarRequest(c.encoder)
+		decodeResponse = DecodeSimilarResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildSimilarRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.SimilarDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("suggestions", "similar", err)
 		}
 		return decodeResponse(resp)
 	}

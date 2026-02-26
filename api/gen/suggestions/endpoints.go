@@ -16,18 +16,21 @@ import (
 // Endpoints wraps the "suggestions" service endpoints.
 type Endpoints struct {
 	Queries goa.Endpoint
+	Similar goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "suggestions" service with endpoints.
 func NewEndpoints(s Service) *Endpoints {
 	return &Endpoints{
 		Queries: NewQueriesEndpoint(s),
+		Similar: NewSimilarEndpoint(s),
 	}
 }
 
 // Use applies the given middleware to all the "suggestions" service endpoints.
 func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.Queries = m(e.Queries)
+	e.Similar = m(e.Similar)
 }
 
 // NewQueriesEndpoint returns an endpoint function that calls the method
@@ -36,5 +39,14 @@ func NewQueriesEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*QueriesPayload)
 		return s.Queries(ctx, p)
+	}
+}
+
+// NewSimilarEndpoint returns an endpoint function that calls the method
+// "similar" of service "suggestions".
+func NewSimilarEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*SimilarPayload)
+		return s.Similar(ctx, p)
 	}
 }

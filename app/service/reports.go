@@ -15,6 +15,7 @@ import (
 	"github.com/pgquerynarrative/pgquerynarrative/app/apilog"
 	"github.com/pgquerynarrative/pgquerynarrative/app/charts"
 	"github.com/pgquerynarrative/pgquerynarrative/app/debuglog"
+	"github.com/pgquerynarrative/pgquerynarrative/app/embedding"
 	"github.com/pgquerynarrative/pgquerynarrative/app/llm"
 	"github.com/pgquerynarrative/pgquerynarrative/app/metrics"
 	"github.com/pgquerynarrative/pgquerynarrative/app/queryrunner"
@@ -28,6 +29,8 @@ type ReportsService struct {
 	llmClient      llm.Client
 	generator      *story.Generator
 	trendThreshold float64 // Min absolute % change for up/down vs flat (0 = default 0.5)
+	embedder       embedding.Embedder
+	embeddingStore *embedding.Store
 }
 
 func NewReportsService(readOnlyPool, appPool *pgxpool.Pool, runner *queryrunner.Runner, llmClient llm.Client, trendThresholdPercent float64) *ReportsService {
@@ -38,6 +41,21 @@ func NewReportsService(readOnlyPool, appPool *pgxpool.Pool, runner *queryrunner.
 		llmClient:      llmClient,
 		generator:      story.NewGenerator(llmClient),
 		trendThreshold: trendThresholdPercent,
+	}
+}
+
+// NewReportsServiceWithRAG is like NewReportsService but enables RAG: similar past
+// queries are retrieved and added to the narrative prompt when generating reports.
+func NewReportsServiceWithRAG(readOnlyPool, appPool *pgxpool.Pool, runner *queryrunner.Runner, llmClient llm.Client, trendThresholdPercent float64, embedder embedding.Embedder, embeddingStore *embedding.Store) *ReportsService {
+	return &ReportsService{
+		readOnlyPool:   readOnlyPool,
+		appPool:        appPool,
+		runner:         runner,
+		llmClient:      llmClient,
+		generator:      story.NewGenerator(llmClient),
+		trendThreshold: trendThresholdPercent,
+		embedder:       embedder,
+		embeddingStore: embeddingStore,
 	}
 }
 
@@ -85,9 +103,32 @@ func (s *ReportsService) Generate(ctx context.Context, payload *reports.Generate
 	calcMetrics := metrics.CalculateMetrics(columnNames, queryResult.Rows, profiles, s.trendThreshold)
 	calcMetrics.PerfSuggestions = BuildPerfSuggestions(queryResult)
 
+	// Optional RAG: retrieve similar past queries and add to prompt context
+	var similarContext string
+	if s.embedder != nil && s.embeddingStore != nil {
+		if vec, err := s.embedder.Embed(ctx, payload.SQL); err == nil {
+			if similar, err := s.embeddingStore.FindSimilar(ctx, vec, 3); err == nil && len(similar) > 0 {
+				const maxSQLLen = 200
+				var b strings.Builder
+				for _, q := range similar {
+					b.WriteString("- ")
+					b.WriteString(q.Name)
+					b.WriteString(": ")
+					sql := q.SQL
+					if len(sql) > maxSQLLen {
+						sql = sql[:maxSQLLen] + "..."
+					}
+					b.WriteString(sql)
+					b.WriteString("\n")
+				}
+				similarContext = strings.TrimSpace(b.String())
+			}
+		}
+	}
+
 	// Generate narrative
 	debuglog.Log("calling LLM for narrative generation")
-	narrative, err := s.generator.Generate(ctx, payload.SQL, columnNames, queryResult.Rows, calcMetrics)
+	narrative, err := s.generator.Generate(ctx, payload.SQL, columnNames, queryResult.Rows, calcMetrics, similarContext)
 	if err != nil {
 		llmMsg := err.Error()
 		apilog.LLMError(llmMsg)
@@ -386,6 +427,9 @@ func ConvertMetrics(m *metrics.Metrics) *reports.MetricsData {
 		}
 		if ts.NextPeriodForecast != nil {
 			tsData.NextPeriodForecast = ts.NextPeriodForecast
+		}
+		if ts.PredictiveSummary != "" {
+			tsData.PredictiveSummary = &ts.PredictiveSummary
 		}
 		timeSeries[col] = tsData
 	}

@@ -20,6 +20,7 @@ import (
 type Server struct {
 	Mounts  []*MountPoint
 	Queries http.Handler
+	Similar http.Handler
 }
 
 // MountPoint holds information about the mounted endpoints.
@@ -50,8 +51,10 @@ func New(
 	return &Server{
 		Mounts: []*MountPoint{
 			{"Queries", "GET", "/api/v1/suggestions/queries"},
+			{"Similar", "GET", "/api/v1/suggestions/similar"},
 		},
 		Queries: NewQueriesHandler(e.Queries, mux, decoder, encoder, errhandler, formatter),
+		Similar: NewSimilarHandler(e.Similar, mux, decoder, encoder, errhandler, formatter),
 	}
 }
 
@@ -61,6 +64,7 @@ func (s *Server) Service() string { return "suggestions" }
 // Use wraps the server handlers with the given middleware.
 func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.Queries = m(s.Queries)
+	s.Similar = m(s.Similar)
 }
 
 // MethodNames returns the methods served.
@@ -69,6 +73,7 @@ func (s *Server) MethodNames() []string { return suggestions.MethodNames[:] }
 // Mount configures the mux to serve the suggestions endpoints.
 func Mount(mux goahttp.Muxer, h *Server) {
 	MountQueriesHandler(mux, h.Queries)
+	MountSimilarHandler(mux, h.Similar)
 }
 
 // Mount configures the mux to serve the suggestions endpoints.
@@ -106,6 +111,59 @@ func NewQueriesHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "queries")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "suggestions")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountSimilarHandler configures the mux to serve the "suggestions" service
+// "similar" endpoint.
+func MountSimilarHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/api/v1/suggestions/similar", f)
+}
+
+// NewSimilarHandler creates a HTTP handler which loads the HTTP request and
+// calls the "suggestions" service "similar" endpoint.
+func NewSimilarHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeSimilarRequest(mux, decoder)
+		encodeResponse = EncodeSimilarResponse(encoder)
+		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "similar")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "suggestions")
 		payload, err := decodeRequest(r)
 		if err != nil {

@@ -142,6 +142,8 @@ type TimeSeriesDataResponseBody struct {
 	TrendSummary *TrendSummaryDataResponseBody `form:"trend_summary,omitempty" json:"trend_summary,omitempty" xml:"trend_summary,omitempty"`
 	// Simple predictive: last value + trend slope
 	NextPeriodForecast *float64 `form:"next_period_forecast,omitempty" json:"next_period_forecast,omitempty" xml:"next_period_forecast,omitempty"`
+	// Human-readable predictive sentence for the narrative
+	PredictiveSummary *string `form:"predictive_summary,omitempty" json:"predictive_summary,omitempty" xml:"predictive_summary,omitempty"`
 }
 
 // PeriodPointDataResponseBody is used to define fields on response body types.

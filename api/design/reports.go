@@ -151,6 +151,7 @@ var TimeSeriesData = Type("TimeSeriesData", func() {
 	Attribute("anomalies", ArrayOf(AnomalyPointData), "Periods flagged as statistical anomalies (e.g. z-score)")
 	Attribute("trend_summary", TrendSummaryData, "Trend over multiple periods (direction, slope, summary)")
 	Attribute("next_period_forecast", Float64, "Simple predictive: last value + trend slope")
+	Attribute("predictive_summary", String, "Human-readable predictive sentence for the narrative")
 	Required("current_period", "trend")
 })
 

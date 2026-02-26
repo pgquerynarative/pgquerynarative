@@ -17,6 +17,9 @@ type Service interface {
 	// Return suggested SQL queries: curated examples plus saved queries matching
 	// optional intent.
 	Queries(context.Context, *QueriesPayload) (res *SuggestedQueriesResult, err error)
+	// Return saved queries semantically similar to the given text
+	// (embedding-based). Requires embeddings to be enabled.
+	Similar(context.Context, *SimilarPayload) (res *SuggestedQueriesResult, err error)
 }
 
 // APIName is the name of the API as defined in the design.
@@ -33,7 +36,7 @@ const ServiceName = "suggestions"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [1]string{"queries"}
+var MethodNames = [2]string{"queries", "similar"}
 
 // QueriesPayload is the payload type of the suggestions service queries method.
 type QueriesPayload struct {
@@ -51,6 +54,14 @@ type QuerySuggestion struct {
 	Title string
 	// Where the suggestion came from: curated or saved
 	Source string
+}
+
+// SimilarPayload is the payload type of the suggestions service similar method.
+type SimilarPayload struct {
+	// Natural-language or SQL text to find similar queries for.
+	Text *string
+	// Max number of similar queries to return
+	Limit int32
 }
 
 // SuggestedQueriesResult is the result type of the suggestions service queries

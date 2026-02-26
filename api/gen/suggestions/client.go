@@ -16,12 +16,14 @@ import (
 // Client is the "suggestions" service client.
 type Client struct {
 	QueriesEndpoint goa.Endpoint
+	SimilarEndpoint goa.Endpoint
 }
 
 // NewClient initializes a "suggestions" service client given the endpoints.
-func NewClient(queries goa.Endpoint) *Client {
+func NewClient(queries, similar goa.Endpoint) *Client {
 	return &Client{
 		QueriesEndpoint: queries,
+		SimilarEndpoint: similar,
 	}
 }
 
@@ -29,6 +31,16 @@ func NewClient(queries goa.Endpoint) *Client {
 func (c *Client) Queries(ctx context.Context, p *QueriesPayload) (res *SuggestedQueriesResult, err error) {
 	var ires any
 	ires, err = c.QueriesEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*SuggestedQueriesResult), nil
+}
+
+// Similar calls the "similar" endpoint of the "suggestions" service.
+func (c *Client) Similar(ctx context.Context, p *SimilarPayload) (res *SuggestedQueriesResult, err error) {
+	var ires any
+	ires, err = c.SimilarEndpoint(ctx, p)
 	if err != nil {
 		return
 	}

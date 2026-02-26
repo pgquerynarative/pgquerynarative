@@ -28,6 +28,27 @@ var _ = Service("suggestions", func() {
 			Response(StatusOK)
 		})
 	})
+
+	Method("similar", func() {
+		Description("Return saved queries semantically similar to the given text (embedding-based). Requires embeddings to be enabled.")
+		Payload(func() {
+			Attribute("text", String, "Natural-language or SQL text to find similar queries for.")
+			Attribute("limit", Int32, "Max number of similar queries to return", func() {
+				Default(5)
+				Minimum(1)
+				Maximum(20)
+			})
+		})
+		Result(SuggestedQueriesResult)
+		HTTP(func() {
+			GET("/api/v1/suggestions/similar")
+			Params(func() {
+				Param("text")
+				Param("limit")
+			})
+			Response(StatusOK)
+		})
+	})
 })
 
 // SuggestedQueriesResult is the result of the suggestions queries method.

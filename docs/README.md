@@ -37,14 +37,6 @@ PgQueryNarrative turns SQL query results into business narratives with AI. This 
 
 ---
 
-## Features
-
-| Document | Description |
-|----------|-------------|
-| [Period comparison](features/period-comparison.md) | Automatic period-over-period comparison, trend, and configuration |
-
----
-
 ## Reference
 
 | Document | Description |
@@ -52,7 +44,6 @@ PgQueryNarrative turns SQL query results into business narratives with AI. This 
 | [Deployment](reference/deployment.md) | Docker build/compose, Kubernetes manifests, Helm chart |
 | [Operations](reference/operations.md) | Monitoring, health checks, and runbooks (deploy, rollback, incidents) |
 | [Troubleshooting](reference/troubleshooting.md) | Common issues and solutions |
-| [Docker resources](reference/docker-resources.md) | Containers, storage, and resource usage |
 | [PostgreSQL extension](reference/postgres-extension.md) | Run queries and generate reports from SQL |
 
 ---
@@ -63,7 +54,6 @@ PgQueryNarrative turns SQL query results into business narratives with AI. This 
 |----------|-------------|
 | [Development setup](development/setup.md) | Build, test, code generation, and workflow |
 | [Testing](development/testing.md) | Running unit and integration tests, QA checklist |
-| [MCP schema, context, and suggestions](development/mcp-schema-context-design.md) | MCP tools design and manual testing (get_schema, get_context, suggest_queries) |
 
 For contributing and security, see the [.github](https://github.com/pgquerynarrative/pgquerynarrative/tree/main/.github) directory (CONTRIBUTING.md, SECURITY.md).
 
@@ -71,4 +61,4 @@ For contributing and security, see the [.github](https://github.com/pgquerynarra
 
 ## Changelog
 
-Release history and unreleased changes: [changelog](../changelog/README.md).
+Release history and unreleased changes: [CHANGELOG.md](../CHANGELOG.md).

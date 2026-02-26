@@ -99,6 +99,17 @@ make start-docker   # or make start-local
 
 Other models: `llama-3.1-8b-instant`, `mixtral-8x7b-32768`. On 429 the client retries.
 
+### Embeddings (optional)
+
+Used for similar-query retrieval (`GET /suggestions/similar`) and RAG context in report generation. When not set, those features are disabled.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `EMBEDDING_BASE_URL` | (empty) | Embedding API base URL. If empty and `LLM_PROVIDER=ollama`, defaults to `LLM_BASE_URL`. |
+| `EMBEDDING_MODEL` | `nomic-embed-text` | Embedding model name (e.g. Ollama `nomic-embed-text`). |
+
+**Ollama:** Pull the model (`ollama pull nomic-embed-text`), then start the app with `EMBEDDING_BASE_URL` set or use the default when using Ollama for LLM. Saved queries are embedded on save; similar and RAG then use stored embeddings.
+
 **MCP (Claude desktop / Cursor)**
 
 Connect Claude desktop or Cursor via the Model Context Protocol so they can run queries and generate reports as tools. Configure by **editing the MCP config file** (no “add server” UI).
@@ -135,7 +146,7 @@ When query results include a date/time column and at least one numeric measure, 
 |----------|---------|-------------|
 | `PERIOD_TREND_THRESHOLD_PERCENT` | `0.5` | Minimum absolute % change to label as "up" or "down"; below this, trend is "flat". |
 
-**Examples:** `0.25` = more sensitive (smaller changes show as up/down). `1` = only changes ≥ 1% are up/down. See [Period comparison](features/period-comparison.md) for usage and testing.
+**Examples:** `0.25` = more sensitive (smaller changes show as up/down). `1` = only changes ≥ 1% are up/down.
 
 ### Security
 
@@ -183,6 +194,5 @@ Config is validated on startup; invalid values cause clear startup errors. If co
 - [Deployment](reference/deployment.md) — Docker, Kubernetes, Helm
 - [API reference](api/README.md) — REST endpoints and request/response
 - [Embedded integration](getting-started/embedded.md) — Library and middleware config
-- [Period comparison](features/period-comparison.md) — Trend threshold and usage
 - [Troubleshooting](reference/troubleshooting.md) — Common issues
 - [Documentation index](README.md)

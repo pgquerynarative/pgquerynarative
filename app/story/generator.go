@@ -21,8 +21,9 @@ func NewGenerator(llmClient llm.Client) *Generator {
 	}
 }
 
-// Generate creates a narrative from query results and metrics
-func (g *Generator) Generate(ctx context.Context, sql string, columns []string, rows [][]interface{}, calcMetrics *metrics.Metrics) (*NarrativeContent, error) {
+// Generate creates a narrative from query results and metrics. similarQueriesContext
+// is optional RAG context (e.g. similar past query names and SQL snippets) to improve the narrative.
+func (g *Generator) Generate(ctx context.Context, sql string, columns []string, rows [][]interface{}, calcMetrics *metrics.Metrics, similarQueriesContext string) (*NarrativeContent, error) {
 	// Convert metrics to JSON (compact format uses less memory than MarshalIndent)
 	metricsJSON, err := json.Marshal(calcMetrics)
 	if err != nil {
@@ -39,7 +40,7 @@ func (g *Generator) Generate(ctx context.Context, sql string, columns []string, 
 	}
 
 	// Build prompt
-	prompt := llm.BuildNarrativePrompt(sql, columns, rows, string(metricsJSON), hasPeriodComparison)
+	prompt := llm.BuildNarrativePrompt(sql, columns, rows, string(metricsJSON), hasPeriodComparison, similarQueriesContext)
 
 	// Generate narrative using LLM
 	response, err := g.llmClient.Generate(ctx, prompt)

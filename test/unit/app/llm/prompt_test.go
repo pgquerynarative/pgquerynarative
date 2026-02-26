@@ -13,7 +13,7 @@ func TestBuildNarrativePrompt_ContainsSQLAndColumns(t *testing.T) {
 	rows := [][]interface{}{{"North", 1000.0}, {"South", 500.0}}
 	metricsJSON := `{"aggregates":{"total":{"sum":1500}}}`
 
-	prompt := llm.BuildNarrativePrompt(sql, columns, rows, metricsJSON, false)
+	prompt := llm.BuildNarrativePrompt(sql, columns, rows, metricsJSON, false, "")
 
 	if !strings.Contains(prompt, sql) {
 		t.Error("prompt should contain the SQL query")
@@ -30,7 +30,7 @@ func TestBuildNarrativePrompt_ContainsSQLAndColumns(t *testing.T) {
 }
 
 func TestBuildNarrativePrompt_NoPeriodComparisonIncludesReminder(t *testing.T) {
-	prompt := llm.BuildNarrativePrompt("SELECT 1", []string{"x"}, nil, "{}", false)
+	prompt := llm.BuildNarrativePrompt("SELECT 1", []string{"x"}, nil, "{}", false, "")
 
 	if !strings.Contains(prompt, "no period-over-period") {
 		t.Error("when hasPeriodComparison is false, prompt should include no period-over-period reminder")
@@ -41,7 +41,7 @@ func TestBuildNarrativePrompt_NoPeriodComparisonIncludesReminder(t *testing.T) {
 }
 
 func TestBuildNarrativePrompt_PeriodComparisonOmitsReminder(t *testing.T) {
-	prompt := llm.BuildNarrativePrompt("SELECT 1", []string{"x"}, nil, "{}", true)
+	prompt := llm.BuildNarrativePrompt("SELECT 1", []string{"x"}, nil, "{}", true, "")
 
 	if strings.Contains(prompt, "no period-over-period comparison in the metrics") {
 		t.Error("when hasPeriodComparison is true, prompt should not include the no-comparison reminder")
@@ -55,7 +55,7 @@ func TestBuildNarrativePrompt_TruncatesRowsToTen(t *testing.T) {
 		rows[i] = []interface{}{i}
 	}
 
-	prompt := llm.BuildNarrativePrompt("SELECT a FROM t", columns, rows, "{}", false)
+	prompt := llm.BuildNarrativePrompt("SELECT a FROM t", columns, rows, "{}", false, "")
 
 	if !strings.Contains(prompt, "Row 10:") {
 		t.Error("prompt should include at least 10 rows")

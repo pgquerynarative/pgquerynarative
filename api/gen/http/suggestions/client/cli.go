@@ -51,3 +51,40 @@ func BuildQueriesPayload(suggestionsQueriesIntent string, suggestionsQueriesLimi
 
 	return v, nil
 }
+
+// BuildSimilarPayload builds the payload for the suggestions similar endpoint
+// from CLI flags.
+func BuildSimilarPayload(suggestionsSimilarText string, suggestionsSimilarLimit string) (*suggestions.SimilarPayload, error) {
+	var err error
+	var text *string
+	{
+		if suggestionsSimilarText != "" {
+			text = &suggestionsSimilarText
+		}
+	}
+	var limit int32
+	{
+		if suggestionsSimilarLimit != "" {
+			var v int64
+			v, err = strconv.ParseInt(suggestionsSimilarLimit, 10, 32)
+			limit = int32(v)
+			if err != nil {
+				return nil, fmt.Errorf("invalid value for limit, must be INT32")
+			}
+			if limit < 1 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("limit", limit, 1, true))
+			}
+			if limit > 20 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("limit", limit, 20, false))
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	v := &suggestions.SimilarPayload{}
+	v.Text = text
+	v.Limit = limit
+
+	return v, nil
+}

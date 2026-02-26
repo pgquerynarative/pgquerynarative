@@ -1,19 +1,21 @@
 # PostgreSQL extension
 
-Call PgQueryNarrative from SQL: run queries, generate reports, and list saved queries. Requires the PgQueryNarrative service to be running and PostgreSQL 12+. Extension files live in `infra/postgres-extension/`. See this doc for install and usage.
+Call PgQueryNarrative from SQL: run queries, generate reports, and list saved queries. Requires the PgQueryNarrative service to be running and PostgreSQL 16+. Extension files live in `infra/postgres-extension/`.
 
-## Install
+## Easy install (Docker)
 
-1. **HTTP extension (recommended):**  
-   `CREATE EXTENSION IF NOT EXISTS http;` (may require superuser).
+From the repo root:
 
-2. **PgQueryNarrative extension:**  
-   Run `make install-extension`, or copy `infra/postgres-extension/*.control` and `*.sql` to `$(pg_config --sharedir)/extension/`, then:
-   ```sql
-   CREATE EXTENSION pgquerynarrative;
-   ```
-   If using the HTTP extension:  
-   `\i infra/postgres-extension/pgquerynarrative--1.0--with-http.sql`
+```bash
+make setup-extension-docker
+```
+
+Starts Postgres, inits the DB, runs migrations, installs the extension, and seeds demo data. If Postgres is already running, use `make install-extension-docker` to install or reinstall the extension only.
+
+## Install (summary)
+
+- **Docker:** `make setup-extension-docker` (full setup) or `make install-extension-docker` (extension only).
+- **Local:** `make install-extension` (set `PGHOST`, `PGPORT`, `PGQUERYNARRATIVE_DB`, `PGQUERYNARRATIVE_USER`), or run `pgquerynarrative--1.0.sql` and optionally `pgquerynarrative--1.0--with-http.sql` (requires the [http](https://github.com/pramsey/pgsql-http) extension) with `psql`.
 
 ## Configuration
 
@@ -44,9 +46,9 @@ SELECT pgquerynarrative_generate_report(
 
 ## Troubleshooting
 
-- **Extension not found:** Check that files are in the extension directory, PostgreSQL version is supported, and you have `CREATE EXTENSION` privilege.
 - **Placeholder or empty result:** Install the HTTP extension and apply `pgquerynarrative--1.0--with-http.sql`.
-- **Connection errors:** Verify the PgQueryNarrative service is running, the API URL is correct, and network/firewall allow the connection.
+- **Connection errors:** Verify the PgQueryNarrative service is running and the API URL is correct (use `http://host.docker.internal:8080` when Postgres is in Docker and the app is on the host).
+- **Role/database issues:** See [Troubleshooting](troubleshooting.md).
 
 ## See also
 

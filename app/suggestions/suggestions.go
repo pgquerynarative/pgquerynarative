@@ -1,5 +1,5 @@
-// Package suggestions provides query suggestion logic: curated example queries
-// and matching saved queries by intent (keyword/substring).
+// Package suggestions provides query suggestion logic: curated example queries,
+// matching saved queries by intent (keyword/substring), and semantic similar-query retrieval.
 package suggestions
 
 import (
@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	suggestions "github.com/pgquerynarrative/pgquerynarrative/api/gen/suggestions"
+	"github.com/pgquerynarrative/pgquerynarrative/app/embedding"
 )
 
 const (
@@ -37,15 +38,24 @@ var curatedQueries = []*suggestions.QuerySuggestion{
 	},
 }
 
-// Suggester returns suggested SQL (curated + saved-query matches by intent).
+// Suggester returns suggested SQL (curated + saved-query matches by intent,
+// and optional embedding-based similar queries).
 type Suggester struct {
-	appPool *pgxpool.Pool
+	appPool  *pgxpool.Pool
+	embedder embedding.Embedder
+	store    *embedding.Store
 }
 
 // NewSuggester creates a suggester that uses the app pool to list saved queries
-// for intent matching.
+// for intent matching. Similar() will return no results when embeddings are not configured.
 func NewSuggester(appPool *pgxpool.Pool) *Suggester {
 	return &Suggester{appPool: appPool}
+}
+
+// NewSuggesterWithEmbedding creates a suggester with optional embedding-based similar-query
+// retrieval. embedder and store may be nil to disable Similar().
+func NewSuggesterWithEmbedding(appPool *pgxpool.Pool, embedder embedding.Embedder, store *embedding.Store) *Suggester {
+	return &Suggester{appPool: appPool, embedder: embedder, store: store}
 }
 
 // Queries implements the suggestions service: returns curated examples plus
@@ -84,6 +94,43 @@ func (s *Suggester) Queries(ctx context.Context, payload *suggestions.QueriesPay
 		}
 	}
 
+	return &suggestions.SuggestedQueriesResult{Suggestions: out}, nil
+}
+
+// Similar returns saved queries semantically similar to the given text using
+// stored embeddings. When embeddings are not configured, returns empty suggestions.
+func (s *Suggester) Similar(ctx context.Context, payload *suggestions.SimilarPayload) (*suggestions.SuggestedQueriesResult, error) {
+	if s.embedder == nil || s.store == nil {
+		return &suggestions.SuggestedQueriesResult{Suggestions: []*suggestions.QuerySuggestion{}}, nil
+	}
+	text := ""
+	if payload.Text != nil {
+		text = strings.TrimSpace(*payload.Text)
+	}
+	if text == "" {
+		return &suggestions.SuggestedQueriesResult{Suggestions: []*suggestions.QuerySuggestion{}}, nil
+	}
+	vec, err := s.embedder.Embed(ctx, text)
+	if err != nil {
+		return &suggestions.SuggestedQueriesResult{Suggestions: []*suggestions.QuerySuggestion{}}, nil
+	}
+	limit := clampLimit(int(payload.Limit), defaultLimit, maxLimit)
+	similar, err := s.store.FindSimilar(ctx, vec, limit)
+	if err != nil {
+		return &suggestions.SuggestedQueriesResult{Suggestions: []*suggestions.QuerySuggestion{}}, nil
+	}
+	out := make([]*suggestions.QuerySuggestion, len(similar))
+	for i, q := range similar {
+		title := q.Name
+		if q.Description != "" {
+			title = q.Name + ": " + truncate(q.Description, descriptionTruncateAt)
+		}
+		out[i] = &suggestions.QuerySuggestion{
+			SQL:    q.SQL,
+			Title:  title,
+			Source: "similar",
+		}
+	}
 	return &suggestions.SuggestedQueriesResult{Suggestions: out}, nil
 }
 

@@ -70,6 +70,59 @@ func DecodeQueriesRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp
 	}
 }
 
+// EncodeSimilarResponse returns an encoder for responses returned by the
+// suggestions similar endpoint.
+func EncodeSimilarResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*suggestions.SuggestedQueriesResult)
+		enc := encoder(ctx, w)
+		body := NewSimilarResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeSimilarRequest returns a decoder for requests sent to the suggestions
+// similar endpoint.
+func DecodeSimilarRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (*suggestions.SimilarPayload, error) {
+	return func(r *http.Request) (*suggestions.SimilarPayload, error) {
+		var (
+			text  *string
+			limit int32
+			err   error
+		)
+		qp := r.URL.Query()
+		textRaw := qp.Get("text")
+		if textRaw != "" {
+			text = &textRaw
+		}
+		{
+			limitRaw := qp.Get("limit")
+			if limitRaw == "" {
+				limit = 5
+			} else {
+				v, err2 := strconv.ParseInt(limitRaw, 10, 32)
+				if err2 != nil {
+					err = goa.MergeErrors(err, goa.InvalidFieldTypeError("limit", limitRaw, "integer"))
+				}
+				limit = int32(v)
+			}
+		}
+		if limit < 1 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("limit", limit, 1, true))
+		}
+		if limit > 20 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("limit", limit, 20, false))
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewSimilarPayload(text, limit)
+
+		return payload, nil
+	}
+}
+
 // marshalSuggestionsQuerySuggestionToQuerySuggestionResponseBody builds a
 // value of type *QuerySuggestionResponseBody from a value of type
 // *suggestions.QuerySuggestion.

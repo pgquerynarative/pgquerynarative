@@ -385,6 +385,7 @@ func marshalReportsTimeSeriesDataToTimeSeriesDataResponseBody(v *reports.TimeSer
 		Trend:              v.Trend,
 		MovingAverage:      v.MovingAverage,
 		NextPeriodForecast: v.NextPeriodForecast,
+		PredictiveSummary:  v.PredictiveSummary,
 	}
 	if v.Periods != nil {
 		res.Periods = make([]*PeriodPointDataResponseBody, len(v.Periods))

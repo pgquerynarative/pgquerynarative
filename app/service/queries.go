@@ -14,6 +14,7 @@ import (
 	"github.com/pgquerynarrative/pgquerynarrative/api/gen/queries"
 	"github.com/pgquerynarrative/pgquerynarrative/app/apilog"
 	"github.com/pgquerynarrative/pgquerynarrative/app/charts"
+	"github.com/pgquerynarrative/pgquerynarrative/app/embedding"
 	"github.com/pgquerynarrative/pgquerynarrative/app/metrics"
 	"github.com/pgquerynarrative/pgquerynarrative/app/queryrunner"
 )
@@ -24,6 +25,9 @@ type QueriesService struct {
 	appPool        *pgxpool.Pool       // Pool for saving queries (full access)
 	runner         *queryrunner.Runner // Query execution engine
 	trendThreshold float64             // Min absolute % change for up/down vs flat (0 = use default 0.5)
+	embedder       embedding.Embedder  // Optional: for storing query embeddings on save
+	embeddingStore *embedding.Store    // Optional: for RAG / similar-query retrieval
+	embeddingModel string              // Model name to store with embedding (e.g. nomic-embed-text)
 }
 
 // strPtr returns a pointer to the given string value.
@@ -40,6 +44,21 @@ func NewQueriesService(readOnlyPool, appPool *pgxpool.Pool, runner *queryrunner.
 		appPool:        appPool,
 		runner:         runner,
 		trendThreshold: trendThresholdPercent,
+	}
+}
+
+// NewQueriesServiceWithEmbedding is like NewQueriesService but enables storing embeddings
+// when saved queries are created, for similar-query retrieval and RAG. embeddingModel
+// is the name of the embedding model (e.g. nomic-embed-text).
+func NewQueriesServiceWithEmbedding(readOnlyPool, appPool *pgxpool.Pool, runner *queryrunner.Runner, trendThresholdPercent float64, embedder embedding.Embedder, embeddingStore *embedding.Store, embeddingModel string) *QueriesService {
+	return &QueriesService{
+		readOnlyPool:   readOnlyPool,
+		appPool:        appPool,
+		runner:         runner,
+		trendThreshold: trendThresholdPercent,
+		embedder:       embedder,
+		embeddingStore: embeddingStore,
+		embeddingModel: embeddingModel,
 	}
 }
 
@@ -185,6 +204,20 @@ func (s *QueriesService) Save(ctx context.Context, payload *queries.SaveQueryPay
 	}
 	item.CreatedAt = createdAt.Format(time.RFC3339)
 	item.UpdatedAt = updatedAt.Format(time.RFC3339)
+
+	// Optionally store embedding for similar-query retrieval and RAG
+	if s.embedder != nil && s.embeddingStore != nil && s.embeddingModel != "" {
+		text := item.Name
+		if item.Description != nil && *item.Description != "" {
+			text = text + " " + *item.Description
+		}
+		text = text + " " + item.SQL
+		vec, err := s.embedder.Embed(ctx, text)
+		if err == nil {
+			_ = s.embeddingStore.Upsert(ctx, item.ID, vec, s.embeddingModel)
+		}
+	}
+
 	return &item, nil
 }
 

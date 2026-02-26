@@ -62,8 +62,7 @@ Full documentation is in the **[docs](docs/README.md)** directory:
 - **Getting started:** [Installation](docs/getting-started/installation.md), [Quick start](docs/getting-started/quickstart.md), [LLM setup](docs/getting-started/llm-setup.md)
 - **User guides:** [Configuration](docs/configuration.md), [CLI usage](docs/usage/cli-usage.md)
 - **API:** [Reference](docs/api/README.md), [Examples](docs/api/examples.md)
-- **Features:** [Period comparison](docs/features/period-comparison.md)
-- **Reference:** [Troubleshooting](docs/reference/troubleshooting.md), [Docker resources](docs/reference/docker-resources.md), [PostgreSQL extension](docs/reference/postgres-extension.md)
+- **Reference:** [Troubleshooting](docs/reference/troubleshooting.md), [PostgreSQL extension](docs/reference/postgres-extension.md), [Deployment](docs/reference/deployment.md)
 - **Development:** [Setup](docs/development/setup.md), [Testing](docs/development/testing.md)
 
 ## License

@@ -18,7 +18,7 @@ LATEST=${LATEST:-0.1.0}
   echo "The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),"
   echo "and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)."
   echo ""
-  echo "Entries are managed in \`changelog/\` — see [changelog/README.md](changelog/README.md) for how to add and release."
+  echo "Entries: edit \`changelog/unreleased.md\` then run \`make changelog\`."
   echo ""
   cat "$CHANGELOG_DIR/unreleased.md"
   echo ""

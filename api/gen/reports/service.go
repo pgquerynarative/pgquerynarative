@@ -165,6 +165,8 @@ type TimeSeriesData struct {
 	TrendSummary *TrendSummaryData
 	// Simple predictive: last value + trend slope
 	NextPeriodForecast *float64
+	// Human-readable predictive sentence for the narrative
+	PredictiveSummary *string
 }
 
 type TopCategoryData struct {

@@ -10,6 +10,7 @@ import (
 	"github.com/pgquerynarrative/pgquerynarrative/app/catalog"
 	"github.com/pgquerynarrative/pgquerynarrative/app/config"
 	"github.com/pgquerynarrative/pgquerynarrative/app/db"
+	"github.com/pgquerynarrative/pgquerynarrative/app/embedding"
 	"github.com/pgquerynarrative/pgquerynarrative/app/llm"
 	"github.com/pgquerynarrative/pgquerynarrative/app/queryrunner"
 	"github.com/pgquerynarrative/pgquerynarrative/app/service"
@@ -67,15 +68,34 @@ func NewClient(ctx context.Context, cfg Config) (*Client, error) {
 	runner := queryrunner.NewRunner(pools.ReadOnly, validator, maxRows, cfg.Database.QueryTimeout)
 	llmClient := newLLMClient(LLMConfig(cfg.LLM))
 
-	queriesService := service.NewQueriesService(
-		pools.ReadOnly, pools.App, runner, cfg.Metrics.TrendThresholdPercent,
-	)
-	reportsService := service.NewReportsService(
-		pools.ReadOnly, pools.App, runner, llmClient, cfg.Metrics.TrendThresholdPercent,
-	)
+	var queriesService *service.QueriesService
+	var reportsService *service.ReportsService
+	var suggester *pkgsuggestions.Suggester
+	embeddingStore := embedding.NewStore(pools.App)
+
+	if cfg.Embedding.BaseURL != "" && cfg.Embedding.Model != "" {
+		emb := embedding.NewOllamaEmbedder(cfg.Embedding.BaseURL, cfg.Embedding.Model)
+		queriesService = service.NewQueriesServiceWithEmbedding(
+			pools.ReadOnly, pools.App, runner, cfg.Metrics.TrendThresholdPercent,
+			emb, embeddingStore, cfg.Embedding.Model,
+		)
+		reportsService = service.NewReportsServiceWithRAG(
+			pools.ReadOnly, pools.App, runner, llmClient, cfg.Metrics.TrendThresholdPercent,
+			emb, embeddingStore,
+		)
+		suggester = pkgsuggestions.NewSuggesterWithEmbedding(pools.App, emb, embeddingStore)
+	} else {
+		queriesService = service.NewQueriesService(
+			pools.ReadOnly, pools.App, runner, cfg.Metrics.TrendThresholdPercent,
+		)
+		reportsService = service.NewReportsService(
+			pools.ReadOnly, pools.App, runner, llmClient, cfg.Metrics.TrendThresholdPercent,
+		)
+		suggester = pkgsuggestions.NewSuggester(pools.App)
+	}
+
 	catalogLoader := catalog.NewLoader(pools.ReadOnly, allowedSchemas)
 	schemaService := service.NewSchemaService(catalogLoader)
-	suggester := pkgsuggestions.NewSuggester(pools.App)
 
 	return &Client{
 		pools:          pools,

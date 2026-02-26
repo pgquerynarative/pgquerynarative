@@ -19,6 +19,13 @@ type QueriesResponseBody struct {
 	Suggestions []*QuerySuggestionResponseBody `form:"suggestions,omitempty" json:"suggestions,omitempty" xml:"suggestions,omitempty"`
 }
 
+// SimilarResponseBody is the type of the "suggestions" service "similar"
+// endpoint HTTP response body.
+type SimilarResponseBody struct {
+	// Suggested SQL and metadata
+	Suggestions []*QuerySuggestionResponseBody `form:"suggestions,omitempty" json:"suggestions,omitempty" xml:"suggestions,omitempty"`
+}
+
 // QuerySuggestionResponseBody is used to define fields on response body types.
 type QuerySuggestionResponseBody struct {
 	// Suggested SQL (use with run_query or refine)
@@ -45,9 +52,41 @@ func NewQueriesSuggestedQueriesResultOK(body *QueriesResponseBody) *suggestions.
 	return v
 }
 
+// NewSimilarSuggestedQueriesResultOK builds a "suggestions" service "similar"
+// endpoint result from a HTTP "OK" response.
+func NewSimilarSuggestedQueriesResultOK(body *SimilarResponseBody) *suggestions.SuggestedQueriesResult {
+	v := &suggestions.SuggestedQueriesResult{}
+	v.Suggestions = make([]*suggestions.QuerySuggestion, len(body.Suggestions))
+	for i, val := range body.Suggestions {
+		if val == nil {
+			v.Suggestions[i] = nil
+			continue
+		}
+		v.Suggestions[i] = unmarshalQuerySuggestionResponseBodyToSuggestionsQuerySuggestion(val)
+	}
+
+	return v
+}
+
 // ValidateQueriesResponseBody runs the validations defined on
 // QueriesResponseBody
 func ValidateQueriesResponseBody(body *QueriesResponseBody) (err error) {
+	if body.Suggestions == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("suggestions", "body"))
+	}
+	for _, e := range body.Suggestions {
+		if e != nil {
+			if err2 := ValidateQuerySuggestionResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateSimilarResponseBody runs the validations defined on
+// SimilarResponseBody
+func ValidateSimilarResponseBody(body *SimilarResponseBody) (err error) {
 	if body.Suggestions == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("suggestions", "body"))
 	}

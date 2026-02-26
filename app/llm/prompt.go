@@ -9,7 +9,8 @@ import (
 
 // BuildNarrativePrompt creates a prompt for narrative generation from query results.
 // hasPeriodComparison should be true only when metrics contain time_series with a real previous period (so the narrative may mention "vs previous period").
-func BuildNarrativePrompt(sql string, columns []string, rows [][]interface{}, metricsJSON string, hasPeriodComparison bool) string {
+// similarQueriesContext is optional RAG context: short descriptions of similar past queries to ground the narrative.
+func BuildNarrativePrompt(sql string, columns []string, rows [][]interface{}, metricsJSON string, hasPeriodComparison bool, similarQueriesContext string) string {
 	var sb strings.Builder
 
 	sb.WriteString("You are a data analyst expert. Your task is to convert SQL query results into a clear, evidence-based business narrative.\n\n")
@@ -31,7 +32,11 @@ func BuildNarrativePrompt(sql string, columns []string, rows [][]interface{}, me
 	sb.WriteString("SQL QUERY:\n")
 	sb.WriteString(sql)
 	sb.WriteString("\n\n")
-
+	if similarQueriesContext != "" {
+		sb.WriteString("SIMILAR PAST QUERIES (for context only; do not invent data from these):\n")
+		sb.WriteString(similarQueriesContext)
+		sb.WriteString("\n\n")
+	}
 	sb.WriteString("QUERY RESULTS:\n")
 	sb.WriteString("Columns: ")
 	sb.WriteString(strings.Join(columns, ", "))

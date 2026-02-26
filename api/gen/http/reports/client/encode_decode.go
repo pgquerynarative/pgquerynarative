@@ -425,6 +425,7 @@ func unmarshalTimeSeriesDataResponseBodyToReportsTimeSeriesData(v *TimeSeriesDat
 		Trend:              *v.Trend,
 		MovingAverage:      v.MovingAverage,
 		NextPeriodForecast: v.NextPeriodForecast,
+		PredictiveSummary:  v.PredictiveSummary,
 	}
 	if v.Periods != nil {
 		res.Periods = make([]*reports.PeriodPointData, len(v.Periods))

@@ -18,6 +18,13 @@ type QueriesResponseBody struct {
 	Suggestions []*QuerySuggestionResponseBody `form:"suggestions" json:"suggestions" xml:"suggestions"`
 }
 
+// SimilarResponseBody is the type of the "suggestions" service "similar"
+// endpoint HTTP response body.
+type SimilarResponseBody struct {
+	// Suggested SQL and metadata
+	Suggestions []*QuerySuggestionResponseBody `form:"suggestions" json:"suggestions" xml:"suggestions"`
+}
+
 // QuerySuggestionResponseBody is used to define fields on response body types.
 type QuerySuggestionResponseBody struct {
 	// Suggested SQL (use with run_query or refine)
@@ -47,10 +54,38 @@ func NewQueriesResponseBody(res *suggestions.SuggestedQueriesResult) *QueriesRes
 	return body
 }
 
+// NewSimilarResponseBody builds the HTTP response body from the result of the
+// "similar" endpoint of the "suggestions" service.
+func NewSimilarResponseBody(res *suggestions.SuggestedQueriesResult) *SimilarResponseBody {
+	body := &SimilarResponseBody{}
+	if res.Suggestions != nil {
+		body.Suggestions = make([]*QuerySuggestionResponseBody, len(res.Suggestions))
+		for i, val := range res.Suggestions {
+			if val == nil {
+				body.Suggestions[i] = nil
+				continue
+			}
+			body.Suggestions[i] = marshalSuggestionsQuerySuggestionToQuerySuggestionResponseBody(val)
+		}
+	} else {
+		body.Suggestions = []*QuerySuggestionResponseBody{}
+	}
+	return body
+}
+
 // NewQueriesPayload builds a suggestions service queries endpoint payload.
 func NewQueriesPayload(intent *string, limit int32) *suggestions.QueriesPayload {
 	v := &suggestions.QueriesPayload{}
 	v.Intent = intent
+	v.Limit = limit
+
+	return v
+}
+
+// NewSimilarPayload builds a suggestions service similar endpoint payload.
+func NewSimilarPayload(text *string, limit int32) *suggestions.SimilarPayload {
+	v := &suggestions.SimilarPayload{}
+	v.Text = text
 	v.Limit = limit
 
 	return v

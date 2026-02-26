@@ -57,8 +57,8 @@ BEGIN
     --     json_build_object('sql', query_sql, 'limit', row_limit)::text
     -- )::http_request);
     
-    -- For basic implementation, return a placeholder
-    -- Full implementation requires http extension or PL/Python
+    -- Without the HTTP extension, return a pending response; install and use
+    -- pgquerynarrative--1.0--with-http.sql for real API calls.
     RAISE NOTICE 'PgQueryNarrative API URL: %', api_url;
     RAISE NOTICE 'Query: %', query_sql;
     RAISE NOTICE 'Limit: %', row_limit;

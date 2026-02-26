@@ -18,12 +18,20 @@ type Config struct {
 	LLM LLMConfig
 	// Metrics holds trend threshold for period comparison (e.g. 0.5 for 0.5%).
 	Metrics MetricsConfig
+	// Embedding holds optional settings for RAG and similar-query retrieval. When BaseURL is empty, embeddings are disabled.
+	Embedding EmbeddingConfig
 	// AllowedSchemas is the list of schema names queries may access (e.g. []string{"demo"}).
 	AllowedSchemas []string
 	// MaxQueryLength is the maximum allowed query length in bytes.
 	MaxQueryLength int
 	// MaxRowsPerQuery is the maximum rows returned per query execution.
 	MaxRowsPerQuery int
+}
+
+// EmbeddingConfig holds optional embedding model settings (e.g. Ollama nomic-embed-text).
+type EmbeddingConfig struct {
+	BaseURL string
+	Model   string
 }
 
 // DatabaseConfig holds PostgreSQL connection settings.
@@ -78,6 +86,10 @@ func FromAppConfig(cfg config.Config) Config {
 		},
 		Metrics: MetricsConfig{
 			TrendThresholdPercent: cfg.Metrics.TrendThresholdPercent,
+		},
+		Embedding: EmbeddingConfig{
+			BaseURL: cfg.Embedding.BaseURL,
+			Model:   cfg.Embedding.Model,
 		},
 		AllowedSchemas:  []string{"demo"},
 		MaxQueryLength:  10000,
