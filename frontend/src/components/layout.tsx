@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/theme-context";
 import { LayoutDashboard, Terminal, Bookmark, FileText, Settings, PanelLeftClose, PanelLeft, Moon, Sun } from "lucide-react";
@@ -15,22 +15,37 @@ const navItems = [
 export default function Layout() {
   const [collapsed, setCollapsed] = useState(false);
   const { theme, setTheme } = useTheme();
+  const location = useLocation();
+
+  const pageLabel =
+    location.pathname.startsWith("/query")
+      ? "Query Runner"
+      : location.pathname.startsWith("/saved")
+        ? "Saved Queries"
+        : location.pathname.startsWith("/reports")
+          ? "Reports"
+          : location.pathname.startsWith("/settings")
+            ? "Settings"
+            : "Dashboard";
 
   return (
-    <div className="flex h-screen overflow-hidden relative z-10">
-      {/* Sidebar: glassmorphism-lite, theme-aware */}
+    <div className="flex h-screen overflow-hidden relative z-10 text-foreground">
       <aside
         className={cn(
           "flex flex-col border-r transition-all duration-200",
-          "bg-surface/95 dark:bg-surface/95 backdrop-blur-sm",
-          "border-primary/10 shadow-[0_0_24px_rgba(0,0,0,0.12)] dark:shadow-[0_0_24px_rgba(0,0,0,0.2)]",
-          "rounded-r-lg border-t-0 border-b-0 border-l-0",
+          "bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/75",
+          "border-border/70",
           collapsed ? "w-16" : "w-56"
         )}
       >
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-border/80">
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-border/70">
           <img src="/logo.png" alt="Logo" className="h-8 w-8 flex-shrink-0" />
-          {!collapsed && <span className="text-sm font-bold text-brand-cyan tracking-wide">PgQueryNarrative</span>}
+          {!collapsed && (
+            <div className="min-w-0">
+              <p className="text-sm font-semibold tracking-tight truncate">PgQueryNarrative</p>
+              <p className="text-[11px] text-muted-foreground truncate">SQL to business narrative</p>
+            </div>
+          )}
         </div>
 
         <nav className="flex-1 py-3 space-y-1 px-2">
@@ -41,11 +56,10 @@ export default function Layout() {
               end={to === "/"}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                  "dark:hover:shadow-[inset_0_0_0_1px_rgba(0,245,255,0.08)]",
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
                   isActive
-                    ? "bg-primary/10 text-primary shadow-[inset_2px_0_0_0] shadow-primary dark:shadow-[0_0_12px_rgba(0,245,255,0.15)]"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+                    ? "bg-primary/10 text-primary border border-primary/20"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/70 border border-transparent"
                 )
               }
             >
@@ -55,13 +69,12 @@ export default function Layout() {
           ))}
         </nav>
 
-        {/* Theme toggle + collapse */}
-        <div className="flex items-center border-t border-border/80">
+        <div className="flex items-center border-t border-border/70">
           <button
             type="button"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className={cn(
-              "flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors cursor-pointer",
+              "flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer",
               collapsed ? "flex-1 py-3" : "flex-1 gap-2 py-3"
             )}
             title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
@@ -71,7 +84,7 @@ export default function Layout() {
           </button>
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="flex items-center justify-center p-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer rounded-br-lg hover:bg-secondary/50"
+            className="flex items-center justify-center p-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer hover:bg-muted/60"
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
@@ -79,9 +92,14 @@ export default function Layout() {
         </div>
       </aside>
 
-      {/* Main: content above background layers; subtle inner border in dark for depth */}
-      <main className="flex-1 overflow-auto min-h-0 border-l border-transparent dark:border-border/30">
-        <div className="max-w-6xl mx-auto px-6 py-8">
+      <main className="flex-1 overflow-auto min-h-0">
+        <div className="sticky top-0 z-20 border-b border-border/60 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="max-w-7xl mx-auto px-5 md:px-8 py-2.5 flex items-center justify-between">
+            <p className="text-xs font-medium tracking-wide uppercase text-muted-foreground">{pageLabel}</p>
+            <p className="text-xs text-muted-foreground">PgQueryNarrative</p>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-5 md:px-8 py-6 md:py-8">
           <Outlet />
         </div>
       </main>
